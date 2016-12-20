@@ -39,6 +39,8 @@ GEM
       minitest (~> 5.1)
       tzinfo (~> 1.1)
     arel (7.1.4)
+    bootstrap-sass (3.0.2.1)
+      sass (~> 3.2)
     builder (3.2.2)
     coderay (1.1.1)
     concurrent-ruby (1.0.3)
@@ -169,6 +171,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  bootstrap-sass
   fabrication
   faker
   jquery-rails
