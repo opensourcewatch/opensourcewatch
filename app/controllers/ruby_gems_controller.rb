@@ -6,7 +6,8 @@ class RubyGemsController < ApplicationController
   def search
     term = params[:search]
     if term != ""
-      @gems = RubyGem.where('name LIKE ?', "%#{term}%")
+      @gems = RubyGem.search(term).records.to_a
+      binding.pry
       render :index
     else
       flash[:error] = "If you don't know how to search... should you be looking?"

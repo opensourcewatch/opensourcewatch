@@ -23,6 +23,10 @@ gem 'sqlite3'
 # Use Puma as the app server
 gem 'puma', '~> 3.0'
 
+# Better search
+gem 'elasticsearch-model'
+gem 'elasticsearch-rails'
+
 group :test do
 end
 
