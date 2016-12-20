@@ -21,8 +21,14 @@ gem 'sqlite3'
 # Use Puma as the app server
 gem 'puma', '~> 3.0'
 
+group :test do
+end
+
 group :development, :test do
   gem 'pry'
+  gem 'fabricator'
+  gem 'faker'
+  gem 'rspec-rails'
 end
 
 group :development do
