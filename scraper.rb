@@ -27,6 +27,39 @@ def scrape_gem_meta_data(gems, base_url, doc)
   end
 end
 
+# Gets the following:
+# - raw README.md file 
+# - number of stars the project has
+#
+# Example project's Github url vs raw url
+# - Github: https://github.com/rspec/rspec/blob/master/README.md
+# - Raw: https://raw.githubusercontent.com/rspec/rspec/master/README.md
+def scrape_gem_github_data
+  ex_github_url = 'https://github.com/rails/rails'
+  github_doc = Nokogiri::HTML(open(ex_github_url))
+  
+  RubyGem.all.each do |gem|
+    github_doc = Nokogiri::HTML(open(gem.url))
+    stars = github_doc.css('ul.pagehead-actions li:nth-child(2) .social-count').to_s[/\d+\,\d+/]
+
+    raw_url = ex_github_url.gsub('github', 'raw.githubusercontent') + '/master/README.md'
+    description = Nokogiri::HTML(open(raw_url)).css('body p').text
+
+    gem.update(stars: stars, description: description)
+  end
+end
+
+def update_score
+  avg_downloads = RubyGem.average(:downloads)
+  avg_stars = RubyGem.average(:stars)
+  star_multiplier = (avg_downloads / avg_stars) + 200
+
+  RubyGem.all.each do |gem|
+    score = gem.downloads + gem.stars * star_multiplier
+    gem.update(score: score)
+  end
+end
+
 base_url = 'https://rubygems.org'
 
 alphabet = ('A'..'Z').to_a
@@ -42,3 +75,6 @@ alphabet.each do |letter|
     break if doc.css('.next_page .disabled').any?
   end
 end
+
+scrape_gem_github_data
+update_score
