@@ -1,4 +1,5 @@
 source 'https://rubygems.org'
+ruby "2.3"
 
 gem 'nokogiri'
 
@@ -40,4 +41,3 @@ group :development do
   gem 'spring'
   gem 'spring-watcher-listen', '~> 2.0.0'
 end
-
