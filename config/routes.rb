@@ -1,3 +1,5 @@
 Rails.application.routes.draw do
-  get "path*", to: "rubygems#index"
+  resources :ruby_gems, only: [:index]
+
+  get "*path", to: "rubygems#index"
 end
