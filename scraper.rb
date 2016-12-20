@@ -20,8 +20,8 @@ def scrape_gem_meta_data(gems, base_url, doc)
     end
 
     if github_url.length > 0
-      unless Gem.exists?(name: gem_name)
-        gem = Gem.create(name: gem_name, url: github_url, downloads: gem_downloads)
+      unless RubyGem.exists?(name: gem_name)
+        gem = RubyGem.create(name: gem_name, url: github_url, downloads: gem_downloads)
       end
     end
   end
