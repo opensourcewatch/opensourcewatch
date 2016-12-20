@@ -12,3 +12,9 @@ milestones1. exploration- find github crawler dumps / find a crawler and run it
  - inclusion in other projects
  - developers that contributed to the project
  - developers that include the project
+
+# Models
+gem -> 
+  url:
+  downloads:
+  name: 
