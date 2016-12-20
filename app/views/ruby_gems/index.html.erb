@@ -1,3 +1,9 @@
+<%= form_tag(ruby_gems_search_path, method: "get") do %>
+  <%= label_tag(:search, "Search for Gem:") %>
+  <%= text_field_tag(:search) %>
+  <%= submit_tag("Search") %>
+<% end %>
+
 <ul>
   <% @gems.each do |gem| %>
     <li>
