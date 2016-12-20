@@ -20,18 +20,16 @@ def scrape_gem_meta_data(gems, base_url, doc)
     end
 
     if github_url.length > 0
-      gems[gem_name] = {
-        url: github_url,
-        downloads: gem_downloads
-      }
+      unless Gem.exists?(name: gem_name)
+        gem = Gem.create(name: gem_name, url: github_url, downloads: gem_downloads)
+      end
     end
   end
 end
 
 base_url = 'https://rubygems.org'
 
-gems = {}
-alphabet = ('A'..'B').to_a
+alphabet = ('A'..'Z').to_a
 
 category_url = "/gems?letter="
 alphabet.each do |letter|
@@ -44,5 +42,3 @@ alphabet.each do |letter|
     break if doc.css('.next_page .disabled').any?
   end
 end
-
-p gems
