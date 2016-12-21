@@ -5,9 +5,18 @@
 <% end %>
 
 <ul>
-  <% @gems.each do |gem| %>
-    <li>
-      <h3><%= gem.name %></h3>
-    </li>
+  <% if @search_results %>
+    <% @search_results.each do |result| %>
+      <li>
+        <h3><%= result[:name] %></h3>
+        <p><%= result[:description] %></p>
+      </li>
+    <% end %>
+  <% elsif @gems %>
+    <% @gems.each do |gem| %>
+      <li>
+        <h3><%= gem.name %></h3>
+      </li>
+    <% end %>
   <% end %>
 </ul>
