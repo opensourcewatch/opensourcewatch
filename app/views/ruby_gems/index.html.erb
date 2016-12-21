@@ -8,13 +8,14 @@
   <% if @search_results %>
     <% @search_results.each do |result| %>
       <li>
-        <h3><%= result[:name] %></h3>
-        <p><%= result[:description] %></p>
+        <h3><%= result[:name].html_safe %></h3>
+        <p><%= result[:description].html_safe %></p>
       </li>
     <% end %>
   <% elsif @gems %>
-    <% @gems.each do |gem| %>
+    <% @gems.each_with_index do |gem, idx| %>
       <li>
+        <span><%= idx + 1 %></span>
         <h3><%= gem.name %></h3>
       </li>
     <% end %>
