@@ -8,9 +8,16 @@ class RubyGem < ActiveRecord::Base
     search_definition = {
       query: {
         multi_match: {
+          fuzziness: 2,
           query: query,
           fields: ["name^100", "description^50"],
           operator: "and"
+        }
+      },
+      highlight: {
+        fields: {
+          description: {},
+          name: {}
         }
       }
     }
