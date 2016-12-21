@@ -1,6 +1,6 @@
 class RubyGemsController < ApplicationController
   def index
-    @gems = RubyGem.order(downloads: :desc)
+    @gems = RubyGem.order(score: :desc)
   end
 
   def search

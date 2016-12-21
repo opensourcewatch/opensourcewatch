@@ -4,6 +4,17 @@ class RubyGem < ActiveRecord::Base
 
   index_name ["ruby_gem", Rails.env].join('_') # create separate indexes for each environment
 
+  def self.update_score
+    avg_downloads = self.average(:downloads)
+    avg_stars = self.average(:stars)
+    star_multiplier = (avg_downloads / avg_stars) + 200
+
+    self.all.each do |gem|
+      score = gem.downloads + gem.stars * star_multiplier
+      gem.update(score: score)
+    end
+  end
+
   def self.search(query, options={})
     search_definition = {
       query: {
