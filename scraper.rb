@@ -1,7 +1,7 @@
 require 'nokogiri'
 require 'open-uri'
 
-# Scraper for Ruby Gem data from RubyGems.org
+# Scraper for Ruby Gem datas from RubyGems.org
 class RubyGemsScraper
   @ruby_gems_base_url = 'https://rubygems.org'
   @curr_gem_doc = nil
