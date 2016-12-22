@@ -47,6 +47,9 @@ class RubyGemsScraper
           end
         end
       end
+    rescue OpenURI::HTTPError => e
+      # TODO: Fix logging
+      puts e.message
     end
 
     def gem_name
