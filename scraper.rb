@@ -7,7 +7,7 @@ class RubyGemsScraper
   @curr_gem_doc = nil
 
   class << self
-    # Iterates through entire alphabet of pagination of rubygems.org's gems 
+    # Iterates through entire alphabet of pagination of rubygems.org's gems
     # and sends each page to check_ruby_gems_org to update/create gems/gem data
     def check_for_new_gems
       alphabet = ('A'..'Z').to_a
@@ -64,19 +64,25 @@ class RubyGemsScraper
       home = @curr_gem_doc.css('#home')
       source = @curr_gem_doc.css('#code')
 
+      url = ""
       if home.any? && home[0]['href'].include?('github')
-        home[0]['href']
+        url = home[0]['href']
       elsif source.any? && source[0]['href'].include?('github')
-        source[0]['href']
-      else
-        ''
+        url = source[0]['href']
       end
+
+      if url != "" && url[4] != "s"
+        url.insert(4, "s")
+      end
+
+      url
     end
   end
 end
 
 # Scrapes data for Gems and Users on Github.com
 class GithubScraper
+
   class << self
     # Gets the following:
     # - number of stars the project has
@@ -85,19 +91,25 @@ class GithubScraper
     # Example project's Github url vs raw url
     # - Github: https://github.com/rspec/rspec/blob/master/README.md
     # - Raw: https://raw.githubusercontent.com/rspec/rspec/master/README.md
-    def update_gem_github_data
-      RubyGem.all.each do |gem|
-        github_doc = Nokogiri::HTML(open(gem.url))
-        stars = github_doc.css('ul.pagehead-actions li:nth-child(2) .social-count').to_s[/\d+\,\d+/]
+    def update_gem_github_data(gems)
+      gems.each do |gem|
+        begin
+          github_doc = Nokogiri::HTML(open(gem.url))
 
-        if github_doc.at('td span:contains("README")')
-          raw_file_url = gem.url.gsub('github', 'raw.githubusercontent') + '/master/README.md'
-          description = Nokogiri::HTML(open(raw_file_url)).css('body p').text
-        else
-          description = "Empty"
+          stars = github_doc.css('ul.pagehead-actions li:nth-child(2) .social-count').to_s[/\d+\,\d+/]
+
+          if github_doc.at('td span:contains("README")')
+            raw_file_url = gem.url.gsub('github', 'raw.githubusercontent') + '/master/README.md'
+            description = Nokogiri::HTML(open(raw_file_url)).css('body p').text
+          else
+            description = "Empty"
+          end
+
+          gem.update(stars: stars, description: description)
+        rescue OpenURI::HTTPError => e
+          gem.destroy
+          puts e.message
         end
-
-        gem.update(stars: stars, description: description)
       end
     end
 
@@ -109,5 +121,5 @@ class GithubScraper
 end
 
 RubyGemsScraper.check_for_new_gems
-# GithubScraper.update_gem_github_data
-# RubyGem.update_score
+GithubScraper.update_gem_github_data(RubyGem.all)
+RubyGem.update_score
