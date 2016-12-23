@@ -4,7 +4,7 @@ require 'open-uri'
 # Scrapes data for Gems and Users on Github.com
 class GithubScraper
   @github_doc = nil
-  @current_lib = nil 
+  @current_lib = nil
 
   class << self
     # Gets the following:
@@ -30,9 +30,11 @@ class GithubScraper
       end
     end
 
-    # Retrieves the top 100 contributors for each RubyGem
-    def all_gems_top_100_contributors
-
+    # Retrieves the top contributors for each RubyGem
+    def gem_contributors(gems = RubyGem.all)
+      # gems.each do |gem|
+      #   @github_doc =
+      # end
     end
 
     private
