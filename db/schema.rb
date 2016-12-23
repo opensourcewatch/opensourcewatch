@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20161220231656) do
+ActiveRecord::Schema.define(version: 20161223223416) do
 
   create_table "ruby_gems", force: :cascade do |t|
     t.string   "url"
@@ -21,6 +21,17 @@ ActiveRecord::Schema.define(version: 20161220231656) do
     t.integer  "stars"
     t.float    "score"
     t.text     "description"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string   "name"
+    t.string   "github_username"
+    t.string   "email"
+    t.integer  "stars"
+    t.integer  "followers"
+    t.float    "score"
+    t.datetime "created_at",      null: false
+    t.datetime "updated_at",      null: false
   end
 
 end

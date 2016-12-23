@@ -15,3 +15,5 @@ puts "Scraping Github"
 GithubScraper.update_gem_data(RubyGem.all)
 
 RubyGem.update_score
+
+GithubScraper.lib_contributors
