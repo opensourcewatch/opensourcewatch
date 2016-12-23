@@ -1,7 +1,7 @@
 config = {
   host: "http://localhost:9200/",
   transport_options: {
-    request: { timeout: 5 }
+    request: { timeout: 250 }
   },
   retry_on_failure: true
 }
