@@ -95,6 +95,7 @@ class RubyGemsScraper
       if url != "" && url[4] != "s"
         url.insert(4, "s")
       end
+      url
     end
 
     def upsert_limit_exceeded
