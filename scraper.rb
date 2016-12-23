@@ -15,16 +15,22 @@ class RubyGemsScraper
 
       alphabet.each do |letter|
         pagination_num = 1
+        gem_max_exceeded = false
         loop do
           doc = Nokogiri::HTML(open(@ruby_gems_base_url + current_letter_path + letter + "&page=#{pagination_num}"))
           parse_page(doc)
 
           if gem_max != Float::INFINITY
-            exit if gem_max <= RubyGem.count
+            if gem_max <= RubyGem.count
+              gem_max_exceeded = true
+              break
+            end
           end
           pagination_num += 1
           break if doc.css('.next_page.disabled').any?
         end
+
+        break if gem_max_exceeded
       end
     end
 
@@ -68,12 +74,14 @@ class RubyGemsScraper
       source = @curr_gem_doc.css('#code')
 
       url = ""
-      if home.any? && home[0]['href'].include?('github')
+      valid_url = /http(s)?:\/\/github\.com/
+      if home.any? && home[0]['href'][valid_url]
         url = home[0]['href']
-      elsif source.any? && source[0]['href'].include?('github')
+      elsif source.any? && source[0]['href'][valid_url]
         url = source[0]['href']
       end
 
+      # Make all http urls be https
       if url != "" && url[4] != "s"
         url.insert(4, "s")
       end
@@ -124,7 +132,3 @@ class GithubScraper
     end
   end
 end
-
-# RubyGemsScraper.upsert_gems(5)
-GithubScraper.update_gem_github_data(RubyGem.all)
-RubyGem.update_score

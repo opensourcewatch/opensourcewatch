@@ -7,4 +7,10 @@ require_relative '../scraper.rb'
 #   movies = Movie.create([{ name: 'Star Wars' }, { name: 'Lord of the Rings' }])
 #   Character.create(name: 'Luke', movie: movies.first)
 
-RubyGemsScraper.upsert_gems(100)
+puts "Scraping Ruby Gems"
+RubyGemsScraper.upsert_gems(5)
+
+puts "Scraping Github"
+GithubScraper.update_gem_github_data(RubyGem.all)
+
+RubyGem.update_score
