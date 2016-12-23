@@ -35,19 +35,30 @@ class GithubScraper
     end
 
     # Retrieves the top contributors for each RubyGem
-    def lib_contributors(gems = RubyGem.all)
-      gems.each do |gem|
-        @current_lib = gem
-        contr_path = @current_lib.url + '/graphs/contributors'
+    #
+    # lib: lib whose repo will be scraped for users
+    def lib_contributors(libs = RubyGem.all)
+      libs.each do |lib|
+        @current_lib = lib
+        contr_path = @current_lib.url + '/commits/master'
         @github_doc = Nokogiri::HTML(open(contr_path))
-        binding.pry
-        @github_doc.css('.capped-card').each do |dev_card|
-          binding.pry
+        commits_by_day
+      end
+    end
+    # 2 agents for user data and stars/followers data
+
+    private
+
+    def commits_by_day
+      @github_doc.css('.commit-group').each do |day|
+        day.css('.commit').each do |commit_info|
+          github_username = commit_info.css('.commit-avatar-cell a')[0]['href']
+          unless User.where(github_username: github_username).any?
+            User.create(github_username: github_username)
+          end
         end
       end
     end
-
-    private
 
     def repo_description
       if @github_doc.at('td span:contains("README")')
@@ -66,4 +77,4 @@ class GithubScraper
   end
 end
 
-GithubScraper.lib_contributors(RubyGem.first(5))
+# GithubScraper.lib_contributors(RubyGem.first(5))
