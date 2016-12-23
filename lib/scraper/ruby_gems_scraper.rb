@@ -13,6 +13,7 @@ class RubyGemsScraper
     #
     # upsert_limit: number of upserts to perform
     def upsert_gems(upsert_limit = Float::INFINITY)
+      puts "Starting RubyGem's Upsert"
       @upsert_limit = upsert_limit
 
       catch :upsert_limit_reached do
@@ -61,6 +62,8 @@ class RubyGemsScraper
           else
             RubyGem.create(name: gem_name, url: github_url, downloads: gem_downloads)
           end
+
+          puts "Gem #{gem_name} upserted."
         end
 
         throw :upsert_limit_reached if upsert_limit_exceeded
