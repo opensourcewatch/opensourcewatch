@@ -14,7 +14,9 @@ class GithubScraper
     # Example project's Github url vs raw url
     # - Github: https://github.com/rspec/rspec/blob/master/README.md
     # - Raw: https://raw.githubusercontent.com/rspec/rspec/master/README.md
-    def update_gem_data(gems)
+    #
+    # gems: gems whose repo data will be updated
+    def update_gem_data(gems = RubyGem.all)
       gems.each do |gem|
         begin
           @current_lib = gem
