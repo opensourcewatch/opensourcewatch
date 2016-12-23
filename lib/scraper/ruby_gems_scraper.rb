@@ -5,36 +5,47 @@ require 'open-uri'
 class RubyGemsScraper
   @ruby_gems_base_url = 'https://rubygems.org'
   @curr_gem_doc = nil
+  @upsert_limit = nil
 
   class << self
     # Iterates through entire alphabet of pagination of rubygems.org's gems
     # and sends each page to check_ruby_gems_org to update/create gems/gem data
-    def upsert_gems(gem_max = Float::INFINITY)
-      alphabet = ('A'..'Z').to_a
-      current_letter_path = "/gems?letter="
+    #
+    # upsert_limit: number of upserts to perform
+    def upsert_gems(upsert_limit = Float::INFINITY)
+      @upsert_limit = upsert_limit
 
-      alphabet.each do |letter|
-        pagination_num = 1
-        gem_max_exceeded = false
-        loop do
-          doc = Nokogiri::HTML(open(@ruby_gems_base_url + current_letter_path + letter + "&page=#{pagination_num}"))
-          parse_page(doc)
-
-          if gem_max != Float::INFINITY
-            if gem_max <= RubyGem.count
-              gem_max_exceeded = true
-              break
-            end
-          end
-          pagination_num += 1
-          break if doc.css('.next_page.disabled').any?
-        end
-
-        break if gem_max_exceeded
+      ('A'..'Z').each do |letter|
+        traverse_letter_pagination(letter)
+        break if upsert_limit_exceeded
       end
     end
 
     private
+
+    def traverse_letter_pagination(letter)
+      current_letter_path = "/gems?letter="
+      pagination_num = 1
+
+      loop do
+        doc = Nokogiri::HTML(open(@ruby_gems_base_url + current_letter_path + letter + "&page=#{pagination_num}"))
+
+        parse_gems_on_current_page(doc)
+
+        break if upsert_limit_exceeded
+
+        pagination_num += 1
+        break if end_of_letter_pagination(doc)
+      end
+    end
+
+    def upsert_limit_exceeded
+      @upsert_limit != Float::INFINITY && RubyGem.count >= @upsert_limit
+    end
+
+    def end_of_letter_pagination(doc)
+      doc.css('.next_page.disabled').any?
+    end
 
     # Finds all gems on a given page and checks for new gems and updates
     # existing ones with the following data:
@@ -44,7 +55,7 @@ class RubyGemsScraper
     #
     # doc: Nokogiri HTML document of a pagination result of rubygems.org
     #
-    def parse_page(doc)
+    def parse_gems_on_current_page(doc)
       doc.css('a.gems__gem').each do |gem_link|
         @curr_gem_doc = Nokogiri::HTML(open(@ruby_gems_base_url + gem_link['href'])) # /gems/gem_name
 
