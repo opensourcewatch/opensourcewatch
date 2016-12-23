@@ -7,6 +7,7 @@ class GithubScraper
   @current_lib = nil
 
   class << self
+    attr_reader :github_doc
     # Gets the following:
     # - number of stars the project has
     # - raw README.md file
@@ -22,6 +23,9 @@ class GithubScraper
           @current_lib = gem
           @github_doc = Nokogiri::HTML(open(@current_lib.url))
 
+          # TODO: add to update_gem_data to get repo name and owner name
+          # owner, repo_name = @current_lib.url[/\/\w+\/\w+/].split('/)
+
           gem.update(stars: repo_stars, description: repo_description)
         rescue OpenURI::HTTPError => e
           gem.destroy
@@ -31,10 +35,16 @@ class GithubScraper
     end
 
     # Retrieves the top contributors for each RubyGem
-    def gem_contributors(gems = RubyGem.all)
-      # gems.each do |gem|
-      #   @github_doc =
-      # end
+    def lib_contributors(gems = RubyGem.all)
+      gems.each do |gem|
+        @current_lib = gem
+        contr_path = @current_lib.url + '/graphs/contributors'
+        @github_doc = Nokogiri::HTML(open(contr_path))
+        binding.pry
+        @github_doc.css('.capped-card').each do |dev_card|
+          binding.pry
+        end
+      end
     end
 
     private
@@ -55,3 +65,5 @@ class GithubScraper
     end
   end
 end
+
+GithubScraper.lib_contributors(RubyGem.first(5))
