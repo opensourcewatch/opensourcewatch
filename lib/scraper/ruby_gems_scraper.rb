@@ -15,9 +15,10 @@ class RubyGemsScraper
     def upsert_gems(upsert_limit = Float::INFINITY)
       @upsert_limit = upsert_limit
 
-      ('A'..'Z').each do |letter|
-        traverse_letter_pagination(letter)
-        break if upsert_limit_exceeded
+      catch :upsert_limit_reached do
+        ('A'..'Z').each do |letter|
+          traverse_letter_pagination(letter)
+        end
       end
     end
 
@@ -31,8 +32,6 @@ class RubyGemsScraper
         doc = Nokogiri::HTML(open(@ruby_gems_base_url + current_letter_path + letter + "&page=#{pagination_num}"))
 
         parse_gems_on_current_page(doc)
-
-        break if upsert_limit_exceeded
 
         pagination_num += 1
         break if end_of_letter_pagination(doc)
@@ -66,6 +65,8 @@ class RubyGemsScraper
             RubyGem.create(name: gem_name, url: github_url, downloads: gem_downloads)
           end
         end
+
+        throw :upsert_limit_reached if upsert_limit_exceeded
       end
     rescue OpenURI::HTTPError => e
       # TODO: Fix logging
