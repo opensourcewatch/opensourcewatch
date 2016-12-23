@@ -5,9 +5,11 @@ class RubyGem < ActiveRecord::Base
   index_name ["ruby_gem", Rails.env].join('_') # create separate indexes for each environment
 
   def self.update_score
-    avg_downloads = self.average(:downloads)
-    avg_stars = self.average(:stars)
-    star_multiplier = (avg_downloads / avg_stars) + 200
+    avg_downloads = self.average(:downloads).to_i
+    avg_stars = self.average(:stars).to_i
+
+    # TODO: Make equation more mathematically correct (make it better)
+    star_multiplier = (avg_downloads / (avg_stars + 1)) + 200
 
     self.all.each do |gem|
       score = gem.downloads + gem.stars * star_multiplier
