@@ -99,7 +99,9 @@ class GithubScraper
         begin
           github_doc = Nokogiri::HTML(open(gem.url))
 
-          stars = github_doc.css('ul.pagehead-actions li:nth-child(2) .social-count').to_s[/\d+\,\d+/]
+          stars = github_doc.css('ul.pagehead-actions li:nth-child(2) .social-count').text.strip.gsub(',', '')
+          # Possibly need for numbers
+          # [/\d+\,\d+/]
 
           if github_doc.at('td span:contains("README")')
             raw_file_url = gem.url.gsub('github', 'raw.githubusercontent') + '/master/README.md'
@@ -123,6 +125,6 @@ class GithubScraper
   end
 end
 
-RubyGemsScraper.upsert_gems(5)
-# GithubScraper.update_gem_github_data(RubyGem.all)
-# RubyGem.update_score
+# RubyGemsScraper.upsert_gems(5)
+GithubScraper.update_gem_github_data(RubyGem.all)
+RubyGem.update_score
