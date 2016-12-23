@@ -9,17 +9,20 @@ class RubyGemsScraper
   class << self
     # Iterates through entire alphabet of pagination of rubygems.org's gems
     # and sends each page to check_ruby_gems_org to update/create gems/gem data
-    def check_for_new_gems
+    def upsert_gems(gem_max = Float::INFINITY)
       alphabet = ('A'..'Z').to_a
       current_letter_path = "/gems?letter="
 
       alphabet.each do |letter|
-        page_num = 1
+        pagination_num = 1
         loop do
-          doc = Nokogiri::HTML(open(@ruby_gems_base_url + current_letter_path + letter + "&page=#{page_num}"))
-          check_ruby_gems_org(doc)
+          doc = Nokogiri::HTML(open(@ruby_gems_base_url + current_letter_path + letter + "&page=#{pagination_num}"))
+          parse_page(doc)
 
-          page_num += 1
+          if gem_max != Float::INFINITY
+            exit if gem_max <= RubyGem.count
+          end
+          pagination_num += 1
           break if doc.css('.next_page.disabled').any?
         end
       end
@@ -35,7 +38,7 @@ class RubyGemsScraper
     #
     # doc: Nokogiri HTML document of a pagination result of rubygems.org
     #
-    def check_ruby_gems_org(doc)
+    def parse_page(doc)
       doc.css('a.gems__gem').each do |gem_link|
         @curr_gem_doc = Nokogiri::HTML(open(@ruby_gems_base_url + gem_link['href'])) # /gems/gem_name
 
@@ -120,6 +123,6 @@ class GithubScraper
   end
 end
 
-RubyGemsScraper.check_for_new_gems
-GithubScraper.update_gem_github_data(RubyGem.all)
-RubyGem.update_score
+RubyGemsScraper.upsert_gems(5)
+# GithubScraper.update_gem_github_data(RubyGem.all)
+# RubyGem.update_score
