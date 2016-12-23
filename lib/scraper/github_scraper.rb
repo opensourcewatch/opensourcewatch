@@ -17,16 +17,18 @@ class GithubScraper
         begin
           github_doc = Nokogiri::HTML(open(gem.url))
 
-          stars = github_doc.css('ul.pagehead-actions li:nth-child(2) .social-count').text.strip.gsub(',', '')
-          # Possibly need for numbers
-          # [/\d+\,\d+/]
+          stars = 
+            github_doc.css('ul.pagehead-actions li:nth-child(2) .social-count')
+              .text.strip.gsub(',', '')
 
-          if github_doc.at('td span:contains("README")')
-            raw_file_url = gem.url.gsub('github', 'raw.githubusercontent') + '/master/README.md'
-            description = Nokogiri::HTML(open(raw_file_url)).css('body p').text
-          else
-            description = "Empty"
-          end
+          description = 
+            if github_doc.at('td span:contains("README")')
+              raw_file_url = gem.url.gsub('github', 'raw.githubusercontent') \
+                               + '/master/README.md'
+              Nokogiri::HTML(open(raw_file_url)).css('body p').text
+            else
+              "Empty"
+            end
 
           gem.update(stars: stars, description: description)
         rescue OpenURI::HTTPError => e

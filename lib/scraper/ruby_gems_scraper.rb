@@ -24,6 +24,7 @@ class RubyGemsScraper
 
     private
 
+    # Traverses all pagination for a given letter
     def traverse_letter_pagination(letter)
       current_letter_path = "/gems?letter="
       pagination_num = 1
@@ -36,10 +37,6 @@ class RubyGemsScraper
         pagination_num += 1
         break if end_of_letter_pagination(doc)
       end
-    end
-
-    def upsert_limit_exceeded
-      @upsert_limit != Float::INFINITY && RubyGem.count >= @upsert_limit
     end
 
     def end_of_letter_pagination(doc)
@@ -85,20 +82,23 @@ class RubyGemsScraper
       home = @curr_gem_doc.css('#home')
       source = @curr_gem_doc.css('#code')
 
-      url = ""
       valid_url = /http(s)?:\/\/github\.com/
-      if home.any? && home[0]['href'][valid_url]
-        url = home[0]['href']
-      elsif source.any? && source[0]['href'][valid_url]
-        url = source[0]['href']
-      end
+      url = if home.any? && home[0]['href'][valid_url]
+              url = home[0]['href']
+            elsif source.any? && source[0]['href'][valid_url]
+              url = source[0]['href']
+            else
+              ''
+            end
 
       # Make all http urls be https
       if url != "" && url[4] != "s"
         url.insert(4, "s")
       end
+    end
 
-      url
+    def upsert_limit_exceeded
+      @upsert_limit != Float::INFINITY && RubyGem.count >= @upsert_limit
     end
   end
 end
