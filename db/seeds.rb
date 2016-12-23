@@ -11,6 +11,6 @@ puts "Scraping Ruby Gems"
 RubyGemsScraper.upsert_gems(5)
 
 puts "Scraping Github"
-GithubScraper.update_gem_github_data(RubyGem.all)
+GithubScraper.update_gem_data(RubyGem.all)
 
 RubyGem.update_score
