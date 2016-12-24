@@ -36,27 +36,60 @@ class GithubScraper
 
     # Retrieves the top contributors for each RubyGem
     #
-    # lib: lib whose repo will be scraped for users
-    def lib_contributors(libs = RubyGem.all)
-      libs.each do |lib|
-        @current_lib = lib
-        contr_path = @current_lib.url + '/commits/master'
-        @github_doc = Nokogiri::HTML(open(contr_path))
-        commits_by_day
+    # NOTE: that you can use these both at the same time
+    # options:
+    # libraries: libraries whose repos will be scraped for data
+    # page_limit: maximum number of pages to iterate
+    # user_limit: max number of users to add
+    def lib_contributors(scrape_limit_opts={})
+      handle_scrape_limits(scrape_limit_opts)
+      catch :scrape_limit_reached do
+        @libraries.each do |lib|
+          @current_lib = lib
+          contr_path = @current_lib.url + '/commits/master'
+          @github_doc = Nokogiri::HTML(open(contr_path))
+          traverse_pagination
+          @page_limit
+        end
       end
     end
     # 2 agents for user data and stars/followers data
 
     private
 
-    def commits_by_day
-      @github_doc.css('.commit-group').each do |day|
-        day.css('.commit').each do |commit_info|
-          github_username = commit_info.css('.commit-avatar-cell a')[0]['href']
-          unless User.where(github_username: github_username).any?
-            User.create(github_username: github_username)
-          end
+    # this can be added to the other scraper
+    def handle_scrape_limits(opts={})
+      @libraries = opts[:libraries] || RubyGem.all
+      @page_limit = opts[:page_limit] || Float::INFINITY
+      @user_limit = opts[:user_limit] || Float::INFINITY
+    end
+
+    def traverse_pagination
+      page_count = 1
+      loop do
+        fetch_commit_data
+
+        throw :scrape_limit_reached if page_count >= @page_limit
+        break unless @github_doc.css('.pagination').any?
+        page_count += 1
+
+        next_path = @github_doc.css('.pagination a')[0]['href']
+        @github_doc = Nokogiri::HTML(open('https://github.com' + next_path))
+      end
+    end
+
+    def fetch_commit_data
+      @github_doc.css('.commit').each do |commit_info|
+        # Not all avatars are users
+        user_anchor = commit_info.css('.commit-avatar-cell a')[0]
+        github_username = user_anchor['href'][1..-1] if user_anchor
+
+        if User.where(github_username: github_username).count == 0 && !github_username.nil?
+          user = User.create(github_username: github_username)
+          puts "User with github_username:#{user.github_username} created."
         end
+
+        throw :scrape_limit_reached if User.count >= @user_limit
       end
     end
 
