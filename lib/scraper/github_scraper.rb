@@ -57,6 +57,36 @@ class GithubScraper
     end
     # 2 agents for user data and stars/followers data
 
+    def update_user_data
+      User.all.each do |user|
+        @github_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}"))
+        followers = @github_doc.css('a[href="/#{user.github_username}?tab=followers .counter"]').text.strip
+        name = @github_doc.css('.vcard-fullname').text.strip
+
+        personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories"))
+        personal_star_count = 0
+        pagination_count = 1
+        loop do
+          personal_repos_doc.css('a[aria-label="Stargazers"]').each do |star_count|
+            personal_star_count += star_count.text.strip.to_i
+          end
+          break if personal_repos_doc.css('.next_page.disabled').any?
+          pagination_count += 1
+          page_regex = /page=#{pagination_count}/
+          random_sleep
+          personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories".gsub(/page=\d/, "page=#{pagination_count}")))
+        end
+        User.update(user.id,
+                    name: name,
+                    followers: followers,
+                    stars: personal_star_count)
+      end
+    end
+
+    def random_sleep
+      sleep [0.09, 0.095, 0.01, 0.02, 0.03].sample
+    end
+
     private
 
     # this can be added to the other scraper
@@ -95,6 +125,13 @@ class GithubScraper
       end
     end
 
+    def traverse_personal_repos_pagination
+    end
+
+    def personal_repos_on_page_data
+
+    end
+
     def repo_description
       if @github_doc.at('td span:contains("README")')
         raw_file_url = @current_lib.url.gsub('github', 'raw.githubusercontent') \
@@ -107,9 +144,10 @@ class GithubScraper
 
     def repo_stars
       @github_doc.css('ul.pagehead-actions li:nth-child(2) .social-count')
-        .text.strip.gsub(',', '')
+        .text.strip.gsub(',', '').to_i
     end
   end
 end
 
+GithubScraper.update_user_data
 # GithubScraper.lib_contributors(RubyGem.first(5))
