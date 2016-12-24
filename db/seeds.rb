@@ -9,10 +9,10 @@ require_relative '../lib/scraper/github_scraper.rb'
 #   Character.create(name: 'Luke', movie: movies.first)
 
 puts "Scraping Ruby Gems"
-RubyGemsScraper.upsert_gems(5)
+RubyGemsScraper.upsert_gems(20)
 
 puts "Scraping Github"
-GithubScraper.update_gem_data(RubyGem.all)
+GithubScraper.update_gem_data
 
 RubyGem.update_score
 
