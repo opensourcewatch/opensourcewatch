@@ -36,8 +36,10 @@ class GithubScraper
 
     # Retrieves the top contributors for each RubyGem
     #
-    # NOTE: that you can use these both at the same time
-    # options:
+    # NOTE: you can use all options together, but whichever one ends first
+    #       will be the one that stops the scraper
+    #
+    # Options
     # libraries: libraries whose repos will be scraped for data
     # page_limit: maximum number of pages to iterate
     # user_limit: max number of users to add
@@ -48,7 +50,7 @@ class GithubScraper
           @current_lib = lib
           contr_path = @current_lib.url + '/commits/master'
           @github_doc = Nokogiri::HTML(open(contr_path))
-          traverse_pagination
+          traverse_commit_pagination
           @page_limit
         end
       end
@@ -64,7 +66,7 @@ class GithubScraper
       @user_limit = opts[:user_limit] || Float::INFINITY
     end
 
-    def traverse_pagination
+    def traverse_commit_pagination
       page_count = 1
       loop do
         fetch_commit_data
