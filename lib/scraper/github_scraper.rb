@@ -29,7 +29,7 @@ class GithubScraper
           gem.update(stars: repo_stars, description: repo_description)
         rescue OpenURI::HTTPError => e
           gem.destroy
-          puts e.message
+          puts "Gem #{gem.name} destroyed : its Github URL #{gem.url} resulted in #{e.message}"
         end
       end
     end

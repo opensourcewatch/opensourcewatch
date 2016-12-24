@@ -59,11 +59,13 @@ class RubyGemsScraper
         if github_url.length > 0
           if RubyGem.exists?(name: gem_name)
             RubyGem.update(name: gem_name, url: github_url, downloads: gem_downloads)
+            puts "Gem #{gem_name} updated."
           else
             RubyGem.create(name: gem_name, url: github_url, downloads: gem_downloads)
+            puts "Gem #{gem_name} created."
           end
-
-          puts "Gem #{gem_name} upserted."
+        else
+          puts "Nothing was done with Gem with URL #{@ruby_gems_base_url + gem_link['href']}: it has no Github URL."
         end
 
         throw :upsert_limit_reached if upsert_limit_exceeded
