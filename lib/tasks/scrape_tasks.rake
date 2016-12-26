@@ -5,7 +5,6 @@ namespace :scrape do
   task :gems, [:letters_to_traverse, :upsert_limit] => :environment do |t, args|
     require_relative "../scraper/ruby_gems_scraper"
 
-    binding.pry
     options = args.to_h
     if args.letters_to_traverse
       options[:letters_to_traverse] = args.letters_to_traverse.split(" ")
