@@ -25,12 +25,13 @@ gem 'puma', '~> 3.0'
 gem 'elasticsearch-model'
 gem 'elasticsearch-rails'
 
+# Use PostGreSQL
+gem "pg"
+
 group :test do
 end
 
 group :development, :test do
-  # Use sqlite3 as the database for Active Record
-  gem 'sqlite3'
   gem 'pry'
   gem 'pry-nav'
   gem 'fabrication'
@@ -48,5 +49,5 @@ group :development do
 end
 
 # group :production do
-  # gem "pg"
+
 # end
