@@ -59,10 +59,10 @@ class RubyGemsScraper
         if github_url.length > 0
           if RubyGem.exists?(name: gem_name)
             RubyGem.update(name: gem_name, url: github_url, downloads: gem_downloads)
-            puts "Gem #{gem_name} updated."
+            puts "UPDATED Gem #{gem_name}"
           else
             RubyGem.create(name: gem_name, url: github_url, downloads: gem_downloads)
-            puts "Gem #{gem_name} created."
+            puts "CREATED Gem #{gem_name}."
           end
         else
           puts "SKIP Gem with URL #{@ruby_gems_base_url + gem_link['href']}: no Github URL found."
