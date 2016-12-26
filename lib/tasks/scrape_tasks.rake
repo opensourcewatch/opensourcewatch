@@ -1,9 +1,17 @@
 namespace :scrape do 
   # Get all gems from github
-  task :gems, [:letters, :upsert_limit] => :environment do |t, args|
-    binding.pry
+  # Can call for a single letter and x amount of gems:
+  #   ex. rake scrape:gems[F, 20]
+  task :gems, [:letters_to_traverse, :upsert_limit] => :environment do |t, args|
     require_relative "../scraper/ruby_gems_scraper"
-    RubyGemsScraper.upsert_gems
+
+    binding.pry
+    options = args.to_h
+    if args.letters_to_traverse
+      options[:letters_to_traverse] = args.letters_to_traverse.split(" ")
+    end
+
+    RubyGemsScraper.upsert_gems(options)
   end
 
   # Get github repo information for each gem
