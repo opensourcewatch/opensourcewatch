@@ -65,7 +65,7 @@ class RubyGemsScraper
             puts "Gem #{gem_name} created."
           end
         else
-          puts "Nothing was done with Gem with URL #{@ruby_gems_base_url + gem_link['href']}: it has no Github URL."
+          puts "SKIP Gem with URL #{@ruby_gems_base_url + gem_link['href']}: no Github URL found."
         end
 
         throw :upsert_limit_reached if upsert_limit_exceeded
