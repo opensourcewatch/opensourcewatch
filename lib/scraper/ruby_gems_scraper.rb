@@ -6,18 +6,21 @@ class RubyGemsScraper
   @ruby_gems_base_url = 'https://rubygems.org'
   @curr_gem_doc = nil
   @upsert_limit = nil
+  @letters_to_traverse = nil
 
   class << self
     # Iterates through entire alphabet of pagination of rubygems.org's gems
     # and sends each page to check_ruby_gems_org to update/create gems/gem data
     #
     # upsert_limit: number of upserts to perform
-    def upsert_gems(upsert_limit = Float::INFINITY)
+    def upsert_gems(letters_to_traverse: ("A".."Z").to_a, upsert_limit: Float::INFINITY)
       puts "Starting RubyGem's Upsert"
+
       @upsert_limit = upsert_limit
+      @letters_to_traverse = letters_to_traverse
 
       catch :upsert_limit_reached do
-        ('A'..'Z').each do |letter|
+        @letters_to_traverse.each do |letter|
           traverse_letter_pagination(letter)
         end
       end
