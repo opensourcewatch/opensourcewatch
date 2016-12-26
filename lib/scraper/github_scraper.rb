@@ -26,6 +26,7 @@ class GithubScraper
           # TODO: add to update_gem_data to get repo name and owner name
           # owner, repo_name = @current_lib.url[/\/\w+\/\w+/].split('/)
 
+          # Parse the page and update gem
           gem.update(stars: repo_stars, description: repo_description)
         rescue OpenURI::HTTPError => e
           gem.destroy
@@ -43,6 +44,7 @@ class GithubScraper
     # libraries: libraries whose repos will be scraped for data
     # page_limit: maximum number of pages to iterate
     # user_limit: max number of users to add
+    # TODO: expand rake task to pass in these options
     def lib_contributors(scrape_limit_opts={})
       handle_scrape_limits(scrape_limit_opts)
       catch :scrape_limit_reached do
@@ -55,8 +57,8 @@ class GithubScraper
         end
       end
     end
-    # 2 agents for user data and stars/followers data
 
+    # 2 agents for user data and stars/followers data
     def update_user_data
       User.all.each do |user|
         @github_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}"))
@@ -66,16 +68,22 @@ class GithubScraper
         personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories"))
         personal_star_count = 0
         pagination_count = 1
+
         loop do
           personal_repos_doc.css('a[aria-label="Stargazers"]').each do |star_count|
             personal_star_count += star_count.text.strip.to_i
           end
+
           break if personal_repos_doc.css('.next_page.disabled').any?
+
           pagination_count += 1
           page_regex = /page=#{pagination_count}/
+
           random_sleep
+
           personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories".gsub(/page=\d/, "page=#{pagination_count}")))
         end
+
         User.update(user.id,
                     name: name,
                     followers: followers,
@@ -83,11 +91,12 @@ class GithubScraper
       end
     end
 
+    private
+
+    # Avoid looking too robotic to Github
     def random_sleep
       sleep [0.09, 0.095, 0.01, 0.02, 0.03].sample
     end
-
-    private
 
     # this can be added to the other scraper
     def handle_scrape_limits(opts={})
@@ -148,6 +157,3 @@ class GithubScraper
     end
   end
 end
-
-GithubScraper.update_user_data
-# GithubScraper.lib_contributors(RubyGem.first(5))
