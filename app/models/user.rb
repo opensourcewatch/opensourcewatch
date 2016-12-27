@@ -1,1 +1,3 @@
-class User < ActiveRecord::Base; end
+class User < ActiveRecord::Base
+  validates :github_username, uniqueness: true
+end
