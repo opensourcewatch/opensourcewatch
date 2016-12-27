@@ -1,10 +1,13 @@
+Dec 27th
+Adding Commit table and logging so we can benchmark our requests.
+
 Dec 27th 
-Three running processes:
+We decided that in order to scale in an interesting way we need to harvest data in as near real time as possible. The only meaninful data that is often updated is commits. The project has three major processes:
 1. Scrape Ruby Gems
 2. Scrape Users
-3. Poll commits and associate with users
+3. Poll commits to track 'user of the day'
 
-Bottleneck is number of requests per hour allowed by Github. 
+Bottleneck is number of requests per hour allowed by Github. If we can push that up we can get closer to real time data extraction.
 
 Dec 27th
 Adding contributors count for each gem so we can estimate number of requests needed every polling period.
