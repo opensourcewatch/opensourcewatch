@@ -1,3 +1,14 @@
+Dec 27th 
+Three running processes:
+1. Scrape Ruby Gems
+2. Scrape Users
+3. Poll commits and associate with users
+
+Bottleneck is number of requests per hour allowed by Github. 
+
+Dec 27th
+Adding contributors count for each gem so we can estimate number of requests needed every polling period.
+
 Dec 27th
 Hitting Github 300 times continuously results in a 429 (too many requests). If we can do a request a second then we are making 60 requests a minute or 3600 an hour. Somewhere in this ballpark. This is a major problem. How can we get around this?
 
