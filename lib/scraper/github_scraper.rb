@@ -130,7 +130,18 @@ class GithubScraper
         if !github_username.nil? && !User.exists?(github_username: github_username) 
           user = User.create(github_username: github_username)
           puts "User CREATE github_username:#{user.github_username}"
+        else
+          user = User.find_by(github_username: github_username)
         end
+
+        binding.pry
+        message = commit_info.css("a.message").text
+        github_identifier = commit_info.css("a.sha").text.strip
+        commit = Commit.create(
+          message: message, 
+          user: user, 
+          github_identifier: github_identifier
+          )
 
         throw :scrape_limit_reached if User.count >= @user_limit
       end
