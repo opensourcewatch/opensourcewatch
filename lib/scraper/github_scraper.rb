@@ -97,7 +97,7 @@ class GithubScraper
 
     # Avoid looking too robotic to Github
     def random_sleep
-      sleep [1].sample
+      sleep [0].sample
     end
 
     # this can be added to the other scraper
@@ -130,17 +130,21 @@ class GithubScraper
         if !github_username.nil? && !User.exists?(github_username: github_username) 
           user = User.create(github_username: github_username)
           puts "User CREATE github_username:#{user.github_username}"
-        else
+        elsif !github_username.nil?
           user = User.find_by(github_username: github_username)
         end
 
-        message = commit_info.css("a.message").text
-        github_identifier = commit_info.css("a.sha").text.strip
-        commit = Commit.create(
-          message: message, 
-          user: user, 
-          github_identifier: github_identifier
-          )
+        if user
+          message = commit_info.css("a.message").text
+          github_identifier = commit_info.css("a.sha").text.strip
+          commit = Commit.create(
+            message: message, 
+            user: user, 
+            github_identifier: github_identifier
+            )
+
+          puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
+        end 
 
         throw :scrape_limit_reached if User.count >= @user_limit
       end
