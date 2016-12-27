@@ -10,11 +10,15 @@ namespace :ruby_gems do
       options[:letters_to_traverse] = args.letters_to_traverse.split(" ")
     end
 
-    RubyGemsScraper.upsert_gems(options)
+    babysitter do 
+      RubyGemsScraper.upsert_gems(options)
+    end
   end
 
   task :top_100 => :environment do 
-    RubyGemsScraper.upsert_top_100_gems
+    babysitter do 
+      RubyGemsScraper.upsert_top_100_gems
+    end
   end
 end
 
@@ -23,13 +27,17 @@ namespace :github do
 
   # Get github repo information for each gem
   task :gems => :environment do 
-    GithubScraper.update_gem_data
+    babysitter do 
+      GithubScraper.update_gem_data
+    end
   end
 
   # Get contributor info from each repo
   task :contributors => :environment do
-    GithubScraper.lib_contributors
-    GithubScraper.update_user_data
+    babysitter do 
+      GithubScraper.lib_contributors
+      GithubScraper.update_user_data
+    end
   end
 
   task :all => [:gems, :contributors]
@@ -41,3 +49,15 @@ task "gems:gscores" => :environment do
   RubyGem.update_score
 end
 
+def babysitter
+  start_time = Time.now
+
+  begin
+    yield
+  rescue Exception => e
+    puts "ERROR: #{e.message}"
+  end
+
+  finish_time = Time.now
+  puts "Task began at #{start_time} and finished #{(finish_time - start_time).seconds} seconds later at #{finish_time} "
+end
