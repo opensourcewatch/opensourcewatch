@@ -27,9 +27,11 @@ namespace :github do
     GithubScraper.lib_contributors
     GithubScraper.update_user_data
   end
+
+  task :all => [:gems, :contributors]
 end
 
-task "scrape:all" => ["ruby_gems:gems", "github:gems", "github:contributors"]
+task "scrape:all" => ["ruby_gems:gems", "github:all"]
 
 task "gems:gscores" => :environment do 
   RubyGem.update_score
