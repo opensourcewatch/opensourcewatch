@@ -5,6 +5,7 @@ require 'open-uri'
 class GithubScraper
   @github_doc = nil
   @current_lib = nil
+  @HEADERS_HASH = {"User-Agent" => "Ruby"}
 
   class << self
     attr_reader :github_doc
@@ -21,7 +22,8 @@ class GithubScraper
       gems.each do |gem|
         begin
           @current_lib = gem
-          @github_doc = Nokogiri::HTML(open(@current_lib.url))
+          @github_doc = Nokogiri::HTML(open(@current_lib.url, @HEADERS_HASH))
+          puts "Updated gem #{@current_lib.name}"
 
           # TODO: add to update_gem_data to get repo name and owner name
           # owner, repo_name = @current_lib.url[/\/\w+\/\w+/].split('/)
@@ -30,7 +32,7 @@ class GithubScraper
           gem.update(stars: repo_stars, description: repo_description)
         rescue OpenURI::HTTPError => e
           gem.destroy
-          puts "DESTROYED Gem #{gem.name} : its Github URL #{gem.url} resulted in #{e.message}"
+          puts "DESTROYED Gem #{@current_lib.name} : its Github URL #{@current_lib.url} resulted in #{e.message}"
         end
       end
     end
@@ -51,7 +53,7 @@ class GithubScraper
         @libraries.each do |lib|
           @current_lib = lib
           contr_path = @current_lib.url + '/commits/master'
-          @github_doc = Nokogiri::HTML(open(contr_path))
+          @github_doc = Nokogiri::HTML(open(contr_path, @HEADERS_HASH))
           traverse_commit_pagination
           @page_limit
         end
@@ -65,7 +67,7 @@ class GithubScraper
         followers = @github_doc.css('a[href="/#{user.github_username}?tab=followers .counter"]').text.strip
         name = @github_doc.css('.vcard-fullname').text.strip
 
-        personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories"))
+        personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories", @HEADERS_HASH))
         personal_star_count = 0
         pagination_count = 1
 
@@ -81,7 +83,7 @@ class GithubScraper
 
           random_sleep
 
-          personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories".gsub(/page=\d/, "page=#{pagination_count}")))
+          personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories".gsub(/page=\d/, "page=#{pagination_count}", @HEADERS_HASH)))
         end
 
         User.update(user.id,
@@ -115,7 +117,7 @@ class GithubScraper
         page_count += 1
 
         next_path = @github_doc.css('.pagination a')[0]['href']
-        @github_doc = Nokogiri::HTML(open('https://github.com' + next_path))
+        @github_doc = Nokogiri::HTML(open('https://github.com' + next_path, @HEADERS_HASH))
       end
     end
 
@@ -145,7 +147,7 @@ class GithubScraper
       if @github_doc.at('td span:contains("README")')
         raw_file_url = @current_lib.url.gsub('github', 'raw.githubusercontent') \
                           + '/master/README.md'
-        Nokogiri::HTML(open(raw_file_url)).css('body p').text
+        Nokogiri::HTML(open(raw_file_url, @HEADERS_HASH)).css('body p').text
       else
         "Empty"
       end
