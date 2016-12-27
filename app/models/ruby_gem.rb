@@ -4,6 +4,8 @@ class RubyGem < ActiveRecord::Base
   #
   # index_name ["ruby_gem", Rails.env].join('_') # create separate indexes for each environment
 
+  has_many :commits
+
   validates :name, uniqueness: true
   validates :url, uniqueness: true
 
