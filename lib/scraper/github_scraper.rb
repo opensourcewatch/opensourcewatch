@@ -97,7 +97,7 @@ class GithubScraper
 
     # Avoid looking too robotic to Github
     def random_sleep
-      sleep [0.09, 0.095, 0.01, 0.02, 0.03].sample
+      sleep [1].sample
     end
 
     # this can be added to the other scraper
@@ -127,20 +127,13 @@ class GithubScraper
         user_anchor = commit_info.css('.commit-avatar-cell a')[0]
         github_username = user_anchor['href'][1..-1] if user_anchor
 
-        if User.where(github_username: github_username).count == 0 && !github_username.nil?
+        if !github_username.nil? && !User.exists?(github_username: github_username) 
           user = User.create(github_username: github_username)
-          puts "User with github_username:#{user.github_username} created."
+          puts "User CREATE github_username:#{user.github_username}"
         end
 
         throw :scrape_limit_reached if User.count >= @user_limit
       end
-    end
-
-    def traverse_personal_repos_pagination
-    end
-
-    def personal_repos_on_page_data
-
     end
 
     def repo_description
