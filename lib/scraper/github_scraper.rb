@@ -134,7 +134,6 @@ class GithubScraper
           user = User.find_by(github_username: github_username)
         end
 
-        binding.pry
         message = commit_info.css("a.message").text
         github_identifier = commit_info.css("a.sha").text.strip
         commit = Commit.create(
