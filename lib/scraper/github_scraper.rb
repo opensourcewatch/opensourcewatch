@@ -1,6 +1,3 @@
-require 'nokogiri'
-require 'open-uri'
-
 # Scrapes data for Gems and Users on Github.com
 class GithubScraper
   @github_doc = nil
