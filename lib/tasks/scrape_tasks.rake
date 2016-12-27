@@ -12,6 +12,10 @@ namespace :ruby_gems do
 
     RubyGemsScraper.upsert_gems(options)
   end
+
+  task :top_100 => :environment do 
+    RubyGemsScraper.upsert_top_100_gems
+  end
 end
 
 namespace :github do

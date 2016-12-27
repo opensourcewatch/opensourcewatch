@@ -13,7 +13,7 @@ class RubyGemsScraper
     # and sends each page to check_ruby_gems_org to update/create gems/gem data
     #
     # upsert_limit: number of upserts to perform
-    def upsert_gems(letters_to_traverse: ("A".."Z").to_a, upsert_limit: Float::INFINITY)
+    def upsert_all_gems(letters_to_traverse: ("A".."Z").to_a, upsert_limit: Float::INFINITY)
       puts "Starting RubyGem's Upsert"
 
       @upsert_limit = upsert_limit
@@ -23,6 +23,34 @@ class RubyGemsScraper
         @letters_to_traverse.each do |letter|
           traverse_letter_pagination(letter)
         end
+      end
+    end
+
+    # Special path using ruby gems stats page
+    def upsert_top_100_gems
+      page_number = 1
+      while page_number <= 10 do 
+        stats_page_url = @ruby_gems_base_url + "/stats?page=#{page_number}"
+        doc = Nokogiri::HTML(open(stats_page_url))
+
+        # TODO: refactor this is almost identical to pagination of all ruby gems
+        doc.css('.stats__graph__gem__name a').each do |gem_link|
+          @curr_gem_doc = Nokogiri::HTML(open(@ruby_gems_base_url + gem_link['href'])) # /gems/gem_name
+
+          if github_url.length > 0
+            if RubyGem.exists?(name: gem_name)
+              RubyGem.update(name: gem_name, url: github_url, downloads: gem_downloads)
+              puts "UPDATED Gem #{gem_name}"
+            else
+              RubyGem.create(name: gem_name, url: github_url, downloads: gem_downloads)
+              puts "CREATED Gem #{gem_name}."
+            end
+          else
+            puts "SKIP Gem with URL #{@ruby_gems_base_url + gem_link['href']}: no Github URL found."
+          end
+        end
+
+        page_number += 1
       end
     end
 
