@@ -4,6 +4,9 @@ class RubyGem < ActiveRecord::Base
   #
   # index_name ["ruby_gem", Rails.env].join('_') # create separate indexes for each environment
 
+  validates :name, uniqueness: true
+  validates :url, uniqueness: true
+
   def self.update_score
     avg_downloads = self.average(:downloads).to_i
     avg_stars = self.average(:stars).to_i
