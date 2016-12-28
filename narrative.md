@@ -1,5 +1,5 @@
 Dec 27th
-Adding Commit table and logging so we can benchmark our requests.
+Adding Commit table and logging so we can benchmark our requests. Added logging to rake tasks and installed httplog to benchmark request speeds and amounts.
 
 Dec 27th 
 We decided that in order to scale in an interesting way we need to harvest data in as near real time as possible. The only meaninful data that is often updated is commits. The project has three major processes:
