@@ -15,7 +15,7 @@ namespace :ruby_gems do
     end
   end
 
-  task :top_100 => :environment do 
+  task :top_100 => :environment do |t|
     babysitter do 
       RubyGemsScraper.upsert_top_100_gems
     end
@@ -26,16 +26,21 @@ namespace :github do
   require_relative "../scraper/github_scraper"
 
   # Get github repo information for each gem
-  task :gems => :environment do 
-    babysitter do 
+  task :gems => :environment do |t|
+    babysitter(t) do 
       GithubScraper.update_gem_data
     end
   end
 
   # Get contributor info from each repo
-  task :contributors => :environment do
+  task :commits => :environment do |t|
+    babysitter(t) do 
+      GithubScraper.lib_commits
+    end
+  end
+
+  task :users => :environment do |t|
     babysitter do 
-      GithubScraper.lib_contributors
       GithubScraper.update_user_data
     end
   end
@@ -49,15 +54,37 @@ task "gems:gscores" => :environment do
   RubyGem.update_score
 end
 
-def babysitter
+def babysitter(task = NullTask.new)
+  # Handles additional logging and error handling for the task
   start_time = Time.now
-
   begin
     yield
   rescue Exception => e
-    puts "ERROR: #{e.message}"
+    completion_message = "Task #{task.name} completed ? FALSE : ERROR #{e.message}"
   end
-
   finish_time = Time.now
-  puts "Task began at #{start_time} and finished #{(finish_time - start_time).seconds} seconds later at #{finish_time} "
+  
+  completion_message = "Task completed ? TRUE" unless completion_message
+  
+  HttpLog.log(tag_meta("NAME: " + task.name))
+  HttpLog.log(tag_meta("DESC: " + task.desc))
+  HttpLog.log(tag_meta("EXITED: " + completion_message)) 
+  HttpLog.log(tag_meta("Task began at #{start_time} and finished #{(finish_time - start_time).seconds} seconds later at #{finish_time}"))
+  # TODO: use reporter to generate a report a print it to the console
+  RequestsLogReport.present
+  # TODO: What about archiving? Right now, we keep appending to the log file which breaks the report generator
 end
+
+def tag_meta(str)
+  "|META| #{str}"
+end
+
+class NullTask
+  attr_accessor :name, :desc
+
+  def initialize 
+    @name = "UNNAMED"
+    @desc = "NO DESCRIPTION"
+  end
+end
+

@@ -38,7 +38,7 @@ class GithubScraper
       end
     end
 
-    # Retrieves the top contributors for each RubyGem
+    # Retrieves the commits for each RubyGem
     #
     # NOTE: you can use all options together, but whichever one ends first
     #       will be the one that stops the scraper
@@ -48,7 +48,7 @@ class GithubScraper
     # page_limit: maximum number of pages to iterate
     # user_limit: max number of users to add
     # TODO: expand rake task to pass in these options
-    def lib_contributors(scrape_limit_opts={})
+    def lib_commits(scrape_limit_opts={})
       handle_scrape_limits(scrape_limit_opts)
       catch :scrape_limit_reached do
         @libraries.each do |lib|
