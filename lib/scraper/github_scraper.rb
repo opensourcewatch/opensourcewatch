@@ -53,8 +53,10 @@ class GithubScraper
       catch :scrape_limit_reached do
         @libraries.each do |lib|
           @current_lib = lib
-          contr_path = @current_lib.url + '/commits/master'
-          @github_doc = Nokogiri::HTML(open(contr_path, @HEADERS_HASH))
+          commits_path = @current_lib.url + '/commits/master'
+
+          @github_doc = Nokogiri::HTML(open(commits_path, @HEADERS_HASH))
+
           traverse_commit_pagination
           @page_limit
         end
@@ -98,7 +100,7 @@ class GithubScraper
 
     # Avoid looking too robotic to Github
     def random_sleep
-      sleep [0].sample
+      sleep [3].sample
     end
 
     # this can be added to the other scraper
@@ -118,6 +120,7 @@ class GithubScraper
         page_count += 1
 
         next_path = @github_doc.css('.pagination a')[0]['href']
+        sleep 1.2
         @github_doc = Nokogiri::HTML(open('https://github.com' + next_path, @HEADERS_HASH))
       end
     end
@@ -135,16 +138,18 @@ class GithubScraper
           user = User.find_by(github_username: github_username)
         end
 
-        if user
+        if user 
           message = commit_info.css("a.message").text
           github_identifier = commit_info.css("a.sha").text.strip
-          commit = Commit.create(
-            message: message, 
-            user: user, 
-            github_identifier: github_identifier
-            )
 
-          puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
+          unless Commit.exists?(github_identifier: github_identifier)
+            Commit.create(
+              message: message, 
+              user: user, 
+              github_identifier: github_identifier
+              )
+            puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
+          end
         end 
 
         throw :scrape_limit_reached if User.count >= @user_limit
