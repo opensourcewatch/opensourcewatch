@@ -32,7 +32,7 @@ namespace :github do
     end
   end
 
-  # Get contributor info from each repo
+  desc "Get contributor info from each repo"
   task :commits => :environment do |t|
     babysitter(t) do 
       GithubScraper.lib_commits
@@ -64,15 +64,15 @@ def babysitter(task = NullTask.new)
   end
   finish_time = Time.now
   
-  completion_message = "Task completed ? TRUE" unless completion_message
+  completion_message = "Task complethttps://ruby-doc.org/core-2.2.0/File.htmlred ? TRUE" unless completion_message
   
   HttpLog.log(tag_meta("NAME: " + task.name))
-  HttpLog.log(tag_meta("DESC: " + task.desc))
   HttpLog.log(tag_meta("EXITED: " + completion_message)) 
-  HttpLog.log(tag_meta("Task began at #{start_time} and finished #{(finish_time - start_time).seconds} seconds later at #{finish_time}"))
-  # TODO: use reporter to generate a report a print it to the console
+  HttpLog.log(tag_meta("RUNTIME: #{(finish_time - start_time).seconds} seconds"))
+  HttpLog.log(tag_meta("START: #{start_time}"))
+  HttpLog.log(tag_meta("FINISH: #{finish_time}"))
+  HttpLog.log(tag_meta("__END_OF_REQUEST_SEQUENCE__"))
   RequestsLogReport.present
-  # TODO: What about archiving? Right now, we keep appending to the log file which breaks the report generator
 end
 
 def tag_meta(str)

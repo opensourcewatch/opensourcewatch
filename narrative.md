@@ -1,5 +1,15 @@
+Dec 29th
+Running tests. See throttle spreadsheet in google drive. Max requests is somewhere between 900 - 1350 an hour
+
+Dec 28th
+Testing HTTP requests and creating estimate for requests needed. Trying to come up with requests allowed per hour from a single IP. The requests we need to gather commit data is really only a function of the amount of gems.
+
+requests_per_day = gems * polls_per_day + C | ex. rph = 100 * 1 hr + 100 users
+
+Of course, there is other requests to consider if we want to scrape user data. 
+
 Dec 27th
-Adding Commit table and logging so we can benchmark our requests. Added logging to rake tasks and installed httplog to benchmark request speeds and amounts.
+Adding Commit table and logging so we can benchmark our requests. Added logging to rake tasks and installed httplog to benchmark request speeds and amounts. Adding reporter to parse requests logs.
 
 Dec 27th 
 We decided that in order to scale in an interesting way we need to harvest data in as near real time as possible. The only meaninful data that is often updated is commits. The project has three major processes:
