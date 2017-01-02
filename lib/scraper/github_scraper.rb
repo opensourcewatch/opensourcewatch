@@ -1,7 +1,7 @@
 require 'nokogiri'
 require 'open-uri'
 require 'httplog'
-
+$count = 0
 # Scrapes data for Gems and Users on Github.com
 class GithubScraper
   @github_doc = nil
@@ -56,12 +56,16 @@ class GithubScraper
           @current_lib = lib
           commits_path = @current_lib.url + '/commits/master'
 
+          puts lib.name
           @github_doc = Nokogiri::HTML(open(commits_path, @HEADERS_HASH))
 
-          traverse_commit_pagination
+          catch :recent_commits_finished do
+            traverse_commit_pagination
+          end
           @page_limit
         end
       end
+      puts $count
     end
 
     # 2 agents for user data and stars/followers data
@@ -128,30 +132,34 @@ class GithubScraper
 
     def fetch_commit_data
       @github_doc.css('.commit').each do |commit_info|
+        commit_date = Time.parse(commit_info.css('relative-time')[0][:datetime])
+        $count += 1 if commit_date.today?
+        throw :recent_commits_finished unless commit_date.today?
+
         # Not all avatars are users
         user_anchor = commit_info.css('.commit-avatar-cell a')[0]
         github_username = user_anchor['href'][1..-1] if user_anchor
 
-        if !github_username.nil? && !User.exists?(github_username: github_username) 
+        if !github_username.nil? && !User.exists?(github_username: github_username)
           user = User.create(github_username: github_username)
           puts "User CREATE github_username:#{user.github_username}"
         elsif !github_username.nil?
           user = User.find_by(github_username: github_username)
         end
 
-        if user 
+        if user
           message = commit_info.css("a.message").text
           github_identifier = commit_info.css("a.sha").text.strip
 
           unless Commit.exists?(github_identifier: github_identifier)
             Commit.create(
-              message: message, 
-              user: user, 
+              message: message,
+              user: user,
               github_identifier: github_identifier
               )
             puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
           end
-        end 
+        end
 
         throw :scrape_limit_reached if User.count >= @user_limit
       end
