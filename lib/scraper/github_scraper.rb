@@ -7,6 +7,7 @@ class GithubScraper
   @github_doc = nil
   @current_lib = nil
   @HEADERS_HASH = {"User-Agent" => "Ruby"}
+  @SECONDS_BETWEEN_REQUESTS = 1.3
 
   class << self
     attr_reader :github_doc
@@ -84,8 +85,6 @@ class GithubScraper
           pagination_count += 1
           page_regex = /page=#{pagination_count}/
 
-          random_sleep
-
           personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories".gsub(/page=\d/, "page=#{pagination_count}", @HEADERS_HASH)))
         end
 
@@ -120,7 +119,9 @@ class GithubScraper
         page_count += 1
 
         next_path = @github_doc.css('.pagination a')[0]['href']
-        sleep 1.2
+
+        sleep SECONDS_BETWEEN_REQUESTS
+
         @github_doc = Nokogiri::HTML(open('https://github.com' + next_path, @HEADERS_HASH))
       end
     end
