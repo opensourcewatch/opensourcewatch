@@ -29,7 +29,7 @@ class RubyGemsScraper
     # Special path using ruby gems stats page
     def upsert_top_100_gems
       page_number = 1
-      while page_number <= 10 do 
+      while page_number <= 10 do
         stats_page_url = @ruby_gems_base_url + "/stats?page=#{page_number}"
         doc = Nokogiri::HTML(open(stats_page_url))
 
@@ -42,6 +42,7 @@ class RubyGemsScraper
               RubyGem.update(name: gem_name, url: github_url, downloads: gem_downloads)
               puts "UPDATED Gem #{gem_name}"
             else
+              # binding.pry
               RubyGem.create(name: gem_name, url: github_url, downloads: gem_downloads)
               puts "CREATED Gem #{gem_name}."
             end
@@ -118,7 +119,7 @@ class RubyGemsScraper
       home = @curr_gem_doc.css('#home')
       source = @curr_gem_doc.css('#code')
 
-      valid_url = /http(s)?:\/\/github\.com/
+      valid_url = /http(s)?:\/\/github\.com\/\w+\/\w+/
       url = if home.any? && home[0]['href'][valid_url]
               url = home[0]['href']
             elsif source.any? && source[0]['href'][valid_url]
