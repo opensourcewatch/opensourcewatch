@@ -1,4 +1,16 @@
 ## Jan 2nd
+Configuring shared remote postgres instance
+
+```
+# Install
+sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib
+
+# switch to default user
+sudo -i -u postgres
+```
+
+## Jan 2nd
 parallelizing scrapers
 - redis queue
   - research phase
