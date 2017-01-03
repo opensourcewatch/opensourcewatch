@@ -58,7 +58,7 @@ class GithubScraper
           commits_path = @current_lib.url + '/commits/master'
 
           puts "Scraping #{lib.name} commits"
-          
+
           @github_doc = Nokogiri::HTML(open(commits_path, @HEADERS_HASH))
 
           catch :recent_commits_finished do
@@ -154,6 +154,7 @@ class GithubScraper
           github_identifier = commit_info.css("a.sha").text.strip
 
           unless Commit.exists?(github_identifier: github_identifier)
+            # TODO: migration for gem_id fk
             Commit.create(
               message: message,
               user: user,
