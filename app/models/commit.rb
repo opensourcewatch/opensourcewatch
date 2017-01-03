@@ -2,6 +2,7 @@ class Commit < ActiveRecord::Base
   validates :github_identifier, uniqueness: true
 
   belongs_to :user
+  belongs_to :ruby_gem
 
   def self.to_csv
     CSV.generate do |csv|
