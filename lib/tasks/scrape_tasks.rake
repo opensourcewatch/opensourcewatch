@@ -32,7 +32,7 @@ namespace :github do
     end
   end
 
-  desc "Get contributor info from each repo"
+  # Get commit info from each repo
   task :commits => :environment do |t|
     babysitter(t) do 
       GithubScraper.lib_commits

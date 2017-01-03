@@ -1,6 +1,7 @@
 require 'nokogiri'
 require 'open-uri'
 require 'httplog'
+
 $count = 0
 # Scrapes data for Gems and Users on Github.com
 class GithubScraper
@@ -56,7 +57,8 @@ class GithubScraper
           @current_lib = lib
           commits_path = @current_lib.url + '/commits/master'
 
-          puts lib.name
+          puts "Scraping #{lib.name} commits"
+          
           @github_doc = Nokogiri::HTML(open(commits_path, @HEADERS_HASH))
 
           catch :recent_commits_finished do
