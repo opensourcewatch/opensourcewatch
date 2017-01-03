@@ -7,6 +7,8 @@ class RubyGem < ActiveRecord::Base
   validates :name, uniqueness: true
   validates :url, uniqueness: true
 
+  has_many :commits
+
   def self.update_score
     avg_downloads = self.average(:downloads).to_i
     avg_stars = self.average(:stars).to_i
