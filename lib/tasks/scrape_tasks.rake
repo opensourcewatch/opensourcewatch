@@ -33,15 +33,18 @@ namespace :github do
   end
 
   # Get commit info from each repo
-  task :commits => :environment do |t|
-    babysitter(t) do 
-      GithubScraper.lib_commits
-    end
-  end
-
-  task :users => :environment do |t|
-    babysitter do 
-      GithubScraper.update_user_data
+  task :commits, [:infinite] => :environment do |t, args|
+    options = args.to_h
+    if args.infinite == "true"
+      babysitter(t) do 
+        loop do 
+          GithubScraper.lib_commits
+        end
+      end
+    else
+      babysitter(t) do 
+        GithubScraper.lib_commits
+      end
     end
   end
 
