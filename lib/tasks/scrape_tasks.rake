@@ -1,4 +1,4 @@
-namespace :ruby_gems do 
+namespace :ruby_gems do
   require_relative "../scraper/ruby_gems_scraper"
 
   # Get all gems from ruby gems
@@ -10,13 +10,13 @@ namespace :ruby_gems do
       options[:letters_to_traverse] = args.letters_to_traverse.split(" ")
     end
 
-    babysitter do 
+    babysitter do
       RubyGemsScraper.upsert_gems(options)
     end
   end
 
   task :top_100 => :environment do |t|
-    babysitter do 
+    babysitter do
       RubyGemsScraper.upsert_top_100_gems
     end
   end
@@ -27,24 +27,16 @@ namespace :github do
 
   # Get github repo information for each gem
   task :gems => :environment do |t|
-    babysitter(t) do 
+    babysitter(t) do
       GithubScraper.update_gem_data
     end
   end
 
   # Get commit info from each repo
-  task :commits, [:infinite] => :environment do |t, args|
-    options = args.to_h
-    if args.infinite == "true"
-      babysitter(t) do 
-        loop do 
-          GithubScraper.lib_commits
-        end
-      end
-    else
-      babysitter(t) do 
-        GithubScraper.lib_commits
-      end
+  task :commits => :environment do |t|
+    require_relative '../scraper/scraper_dispatcher'
+    babysitter(t) do
+      ScraperDispatcher.scrape_commits
     end
   end
 
@@ -53,7 +45,7 @@ end
 
 task "scrape:all" => ["ruby_gems:gems", "github:all"]
 
-task "gems:gscores" => :environment do 
+task "gems:gscores" => :environment do
   RubyGem.update_score
 end
 
@@ -66,11 +58,11 @@ def babysitter(task = NullTask.new)
     completion_message = "Task #{task.name} completed ? FALSE : ERROR #{e.message}"
   end
   finish_time = Time.now
-  
+
   completion_message = "Task complethttps://ruby-doc.org/core-2.2.0/File.htmlred ? TRUE" unless completion_message
-  
+
   HttpLog.log(tag_meta("NAME: " + task.name))
-  HttpLog.log(tag_meta("EXITED: " + completion_message)) 
+  HttpLog.log(tag_meta("EXITED: " + completion_message))
   HttpLog.log(tag_meta("RUNTIME: #{(finish_time - start_time).seconds} seconds"))
   HttpLog.log(tag_meta("START: #{start_time}"))
   HttpLog.log(tag_meta("FINISH: #{finish_time}"))
@@ -85,9 +77,8 @@ end
 class NullTask
   attr_accessor :name, :desc
 
-  def initialize 
+  def initialize
     @name = "UNNAMED"
     @desc = "NO DESCRIPTION"
   end
 end
-
