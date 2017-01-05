@@ -2,7 +2,6 @@ require 'nokogiri'
 require 'open-uri'
 require 'httplog'
 
-$count = 0
 # Scrapes data for Gems and Users on Github.com
 class GithubScraper
   @github_doc = nil
@@ -59,7 +58,19 @@ class GithubScraper
 
           puts "Scraping #{lib.name} commits"
 
-          @github_doc = Nokogiri::HTML(open(commits_path, @HEADERS_HASH))
+          @github_doc = commits_path
+          if @github_doc
+          tries = 3
+          begin
+            @github_doc = Nokogiri::HTML(open(commits_path, @HEADERS_HASH))
+          rescue Timeout::Error => e
+            tries -= 1
+            if tries > 0
+              retry
+            else
+              puts e.message
+            end
+          end
 
           catch :recent_commits_finished do
             traverse_commit_pagination
@@ -67,7 +78,18 @@ class GithubScraper
           @page_limit
         end
       end
-      puts $count
+    end
+
+    def create_github_doc(url = nil)
+      tries ||= 3
+      @github_doc = Nokogiri::HTML(open(url, @HEADERS_HASH))
+    rescue Timeout::Error => e
+      tries -= 1
+      if tries > 0
+        retry
+      else
+        puts e.message
+      end
     end
 
     # 2 agents for user data and stars/followers data
@@ -103,6 +125,9 @@ class GithubScraper
 
     private
 
+    def open_html_doc(url)
+    end
+
     # Avoid looking too robotic to Github
     def random_sleep
       sleep [3].sample
@@ -135,7 +160,6 @@ class GithubScraper
     def fetch_commit_data
       @github_doc.css('.commit').each do |commit_info|
         commit_date = Time.parse(commit_info.css('relative-time')[0][:datetime])
-        $count += 1 if commit_date.today?
         throw :recent_commits_finished unless commit_date.today?
 
         # Not all avatars are users
