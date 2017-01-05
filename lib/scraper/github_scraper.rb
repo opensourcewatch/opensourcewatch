@@ -1,16 +1,13 @@
-require 'nokogiri'
-require 'open-uri'
-require 'httplog'
+require_relative './noko_doc'
 
 # Scrapes data for Gems and Users on Github.com
 class GithubScraper
-  @github_doc = nil
+  @github_doc = NokoDoc.new
   @current_lib = nil
-  @HEADERS_HASH = {"User-Agent" => "Ruby"}
   @SECONDS_BETWEEN_REQUESTS = 0
 
   class << self
-    attr_reader :github_doc
+    attr_reader :github_doc # TODO: is this needed?
     # Gets the following:
     # - number of stars the project has
     # - raw README.md file
@@ -24,7 +21,7 @@ class GithubScraper
       gems.each do |gem|
         begin
           @current_lib = gem
-          @github_doc = Nokogiri::HTML(open(@current_lib.url, @HEADERS_HASH))
+          break unless @github_doc.new_doc(@current_lib.url)
           puts "Updated gem #{@current_lib.name}"
 
           # TODO: add to update_gem_data to get repo name and owner name
@@ -58,48 +55,27 @@ class GithubScraper
 
           puts "Scraping #{lib.name} commits"
 
-          @github_doc = commits_path
-          if @github_doc
-          tries = 3
-          begin
-            @github_doc = Nokogiri::HTML(open(commits_path, @HEADERS_HASH))
-          rescue Timeout::Error => e
-            tries -= 1
-            if tries > 0
-              retry
-            else
-              puts e.message
-            end
-          end
+          break unless @github_doc.new_doc(commits_path)
 
           catch :recent_commits_finished do
             traverse_commit_pagination
           end
+
+          # TODO: why is this here?
           @page_limit
         end
-      end
-    end
-
-    def create_github_doc(url = nil)
-      tries ||= 3
-      @github_doc = Nokogiri::HTML(open(url, @HEADERS_HASH))
-    rescue Timeout::Error => e
-      tries -= 1
-      if tries > 0
-        retry
-      else
-        puts e.message
       end
     end
 
     # 2 agents for user data and stars/followers data
     def update_user_data
       User.all.each do |user|
-        @github_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}"))
-        followers = @github_doc.css('a[href="/#{user.github_username}?tab=followers .counter"]').text.strip
-        name = @github_doc.css('.vcard-fullname').text.strip
+        break unless @github_doc.new_doc("https://github.com/#{user.github_username}")
+        followers = @github_doc.doc.css('a[href="/#{user.github_username}?tab=followers .counter"]').text.strip
+        name = @github_doc.doc.css('.vcard-fullname').text.strip
 
-        personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories", @HEADERS_HASH))
+        personal_repos_doc = NokoDoc.new_temp_doc("https://github.com/#{user.github_username}?page=1&tab=repositories")
+        break unless personal_repos_doc
         personal_star_count = 0
         pagination_count = 1
 
@@ -113,7 +89,8 @@ class GithubScraper
           pagination_count += 1
           page_regex = /page=#{pagination_count}/
 
-          personal_repos_doc = Nokogiri::HTML(open("https://github.com/#{user.github_username}?page=1&tab=repositories".gsub(/page=\d/, "page=#{pagination_count}", @HEADERS_HASH)))
+          personal_repos_doc = NokoDoc.new_temp_doc("https://github.com/#{user.github_username}?page=1&tab=repositories".gsub(/page=\d/, "page=#{pagination_count}"))
+          break unless personal_repos_doc
         end
 
         User.update(user.id,
@@ -124,9 +101,6 @@ class GithubScraper
     end
 
     private
-
-    def open_html_doc(url)
-    end
 
     # Avoid looking too robotic to Github
     def random_sleep
@@ -146,19 +120,19 @@ class GithubScraper
         fetch_commit_data
 
         throw :scrape_limit_reached if page_count >= @page_limit
-        break unless @github_doc.css('.pagination').any?
+        break unless @github_doc.doc.css('.pagination').any?
         page_count += 1
 
-        next_path = @github_doc.css('.pagination a')[0]['href']
+        next_path = @github_doc.doc.css('.pagination a')[0]['href']
 
         sleep SECONDS_BETWEEN_REQUESTS
 
-        @github_doc = Nokogiri::HTML(open('https://github.com' + next_path, @HEADERS_HASH))
+        break unless @github_doc.new_doc('https://github.com' + next_path)
       end
     end
 
     def fetch_commit_data
-      @github_doc.css('.commit').each do |commit_info|
+      @github_doc.doc.css('.commit').each do |commit_info|
         commit_date = Time.parse(commit_info.css('relative-time')[0][:datetime])
         throw :recent_commits_finished unless commit_date.today?
 
@@ -194,17 +168,17 @@ class GithubScraper
     end
 
     def repo_description
-      if @github_doc.at('td span:contains("README")')
+      if @github_doc.doc.at('td span:contains("README")')
         raw_file_url = @current_lib.url.gsub('github', 'raw.githubusercontent') \
                           + '/master/README.md'
-        Nokogiri::HTML(open(raw_file_url, @HEADERS_HASH)).css('body p').text
+        NokoDoc.new_temp_doc(raw_file_url).css('body p').text
       else
         "Empty"
       end
     end
 
     def repo_stars
-      @github_doc.css('ul.pagehead-actions li:nth-child(2) .social-count')
+      @github_doc.doc.css('ul.pagehead-actions li:nth-child(2) .social-count')
         .text.strip.gsub(',', '').to_i
     end
   end
