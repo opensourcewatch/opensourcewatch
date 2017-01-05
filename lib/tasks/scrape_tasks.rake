@@ -11,7 +11,7 @@ namespace :ruby_gems do
     end
 
     babysitter do
-      RubyGemsScraper.upsert_gems(options)
+      RubyGemsScraper.upsert_all_gems(options)
     end
   end
 
