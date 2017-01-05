@@ -52,10 +52,17 @@ namespace :github do
 end
 
 # Get commit info from each repo using the redis queue
-task :dispatcher => :environment do |t|
+namespace :dispatch do
   require_relative '../scraper/scraper_dispatcher'
-  babysitter(t) do
-    ScraperDispatcher.scrape_commits
+
+  task :jobs => :environment do |t|
+    babysitter(t) do
+      ScraperDispatcher.scrape_commits
+    end
+  end
+
+  task :enqueue => :environment do
+    ScraperDispatcher.redis_requeue
   end
 end
 
