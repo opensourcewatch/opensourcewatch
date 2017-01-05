@@ -33,14 +33,30 @@ namespace :github do
   end
 
   # Get commit info from each repo
-  task :commits => :environment do |t|
-    require_relative '../scraper/scraper_dispatcher'
-    babysitter(t) do
-      ScraperDispatcher.scrape_commits
+  task :commits, [:infinite] => :environment do |t, args|
+    options = args.to_h
+    if args.infinite == "true"
+      babysitter(t) do
+        loop do
+          GithubScraper.lib_commits
+        end
+      end
+    else
+      babysitter(t) do
+        GithubScraper.lib_commits
+      end
     end
   end
 
-  task :all => [:gems, :contributors]
+  task :all => [:gems, :commits]
+end
+
+# Get commit info from each repo using the redis queue
+task :dispatcher => :environment do |t|
+  require_relative '../scraper/scraper_dispatcher'
+  babysitter(t) do
+    ScraperDispatcher.scrape_commits
+  end
 end
 
 task "scrape:all" => ["ruby_gems:gems", "github:all"]

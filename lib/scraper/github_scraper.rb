@@ -7,7 +7,7 @@ class GithubScraper
   @github_doc = nil
   @current_lib = nil
   @HEADERS_HASH = {"User-Agent" => "Ruby"}
-  @SECONDS_BETWEEN_REQUESTS = 1.3
+  @SECONDS_BETWEEN_REQUESTS = 0
 
   class << self
     attr_reader :github_doc
@@ -182,6 +182,7 @@ class GithubScraper
             Commit.create(
               message: message,
               user: user,
+              ruby_gem: @current_lib,
               github_identifier: github_identifier
               )
             puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
