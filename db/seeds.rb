@@ -1,4 +1,5 @@
-require_relative '../scraper.rb'
+require_relative '../lib/scraper/ruby_gems_scraper.rb'
+require_relative '../lib/scraper/github_scraper.rb'
 # This file should contain all the record creation needed to seed the database with its default values.
 # The data can then be loaded with the rails db:seed command (or created alongside the database with db:setup).
 #
@@ -8,9 +9,11 @@ require_relative '../scraper.rb'
 #   Character.create(name: 'Luke', movie: movies.first)
 
 puts "Scraping Ruby Gems"
-RubyGemsScraper.upsert_gems(5)
+RubyGemsScraper.upsert_top_100_gems
 
 puts "Scraping Github"
-GithubScraper.update_gem_data(RubyGem.all)
+GithubScraper.update_gem_data
 
 RubyGem.update_score
+
+GithubScraper.lib_contributors
