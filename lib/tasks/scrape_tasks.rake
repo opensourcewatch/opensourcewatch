@@ -67,10 +67,15 @@ namespace :dispatch do
 end
 
 namespace :github_api do
-  require_relative '../api/github_wrapper.rb'
+  require_relative '../api/github_search_wrapper.rb'
 
   task :search_repos => :environment do
     GithubWrapper.paginate_repos
+  end
+
+  require_relative '../api/github_repos_wrapper'
+  task :public_repos => :environment do
+    GithubReposWrapper.paginate_repos
   end
 end
 
