@@ -1,4 +1,5 @@
-# TODO: refactor for droppingo f ruby gems table
+# TODO: extract with the ruby gems scraper and bundle the
+# ruby_gems namespace rake tasks with it
 namespace :ruby_gems do
   require_relative "../scraper/ruby_gems_scraper"
 
@@ -26,7 +27,7 @@ end
 namespace :github do
   require_relative "../scraper/github_scraper"
 
-  # Get github repo information for each gem
+  # Get github repo information for each repo
   task :repos => :environment do |t|
     babysitter(t) do
       GithubScraper.update_repo_data
@@ -80,10 +81,9 @@ namespace :github_api do
   end
 end
 
-task "scrape:all" => ["ruby_gems:gems", "github:all"]
-
-task "gems:gscores" => :environment do
-  RubyGem.update_score
+task "repos:gscores" => :environment do
+  # TODO: update score doesn't exist yet
+  Repository.update_score
 end
 
 def babysitter(task = NullTask.new)
