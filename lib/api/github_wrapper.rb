@@ -1,7 +1,3 @@
-require 'faraday'
-require 'pry'
-require 'json'
-
 def query(query_param = 'stars:>1')
   @query = "?q=''&q=#{query_param}&sort=stars&order=desc"
 end
@@ -42,31 +38,53 @@ def paginate
   @repos = []
 
   loop do
-    @resp = Faraday.get(@curr_url) do |req|
-        req.headers['Authorization'] = "token #{@access_token}"
-        req.headers['Accept'] = 'application/vnd.github.v3+json'
-    end
-
-    if rate_requests_remaining
-      repos_as_hashes = JSON.parse(@resp.body)['items']
-      repos_as_hashes.each do |repo_hash|
-        @repos << hash_to_struct(repo_hash)
-      end
-
-      if last_pagination?
-        last_stars = @repos.last[:stars]
-        @curr_url = @base_url + @search_path + query("stars:<=#{last_stars}")
-        binding.pry
+    loop do
+      @resp = search_request
+      puts "Search request to #{@curr_url}"
+      if rate_requests_remain?
+        handle_request
       else
-        @curr_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
+        break
       end
     end
-
+    puts "Out of requests... Sleeping"
+    puts "Beginning at #{time_to_reset}"
+    sleep Time.at(time_to_reset) - Time.now
   end
 end
 
-def rate_requests_remaining
-  @resp.headers['x-ratelimit-remaining'].to_i > 0
+def handle_request
+    parse_repos
+
+    if last_pagination?
+      last_stars = @repos.last[:stars]
+      @curr_url = @base_url + @search_path + query("stars:<=#{last_stars}")
+    else
+      @curr_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
+    end
 end
 
-paginate
+def parse_repos
+  JSON.parse(@resp.body)['items'].each do |repo_hash|
+    @repos << hash_to_struct(repo_hash)
+  end
+end
+
+def search_request
+  Faraday.get(@curr_url) do |req|
+      req.headers['Authorization'] = "token #{@access_token}"
+      req.headers['Accept'] = 'application/vnd.github.v3+json'
+  end
+end
+
+def rate_requests_remain?
+  requests_remaining > 0
+end
+
+def requests_remaining
+  @resp.headers['x-ratelimit-remaining'].to_i
+end
+
+def time_to_reset
+  @resp.headers['x-ratelimit-reset'].to_i
+end
