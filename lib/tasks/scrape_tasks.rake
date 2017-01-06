@@ -69,7 +69,7 @@ end
 namespace :git_api do
   require_relative '../api/github_wrapper.rb'
 
-  task :repos do
+  task :repos => :environment do
     paginate
   end
 end
