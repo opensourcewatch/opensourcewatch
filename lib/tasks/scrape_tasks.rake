@@ -1,3 +1,4 @@
+# TODO: refactor for droppingo f ruby gems table
 namespace :ruby_gems do
   require_relative "../scraper/ruby_gems_scraper"
 

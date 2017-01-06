@@ -1,3 +1,4 @@
+# TODO: modify to reflect drop of ruby gems table
 class ScraperDispatcher
   def self.scrape_commits
     # refactor this to open a remote redis connection

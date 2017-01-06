@@ -6,6 +6,7 @@ class GithubScraper
   @current_lib = nil
   @SECONDS_BETWEEN_REQUESTS = 0
 
+  # TODO: refactor to use Repository instead of Gem
   class << self
     attr_reader :github_doc # TODO: is this needed?
     # Gets the following:
