@@ -9,7 +9,8 @@ end
 @base_url = 'https://api.github.com'
 @search_path = '/search/repositories'
 @curr_url = @base_url + @search_path + query
-@access_token = '1366594a5d901168eadee262c338ce5e14df07bf'
+
+@access_token = ENV["GITHUB_API_KEY"]
 
 @repo_struct = Struct.new(:name,
                           :github_project_id,
@@ -51,7 +52,7 @@ def paginate
       repos_as_hashes.each do |repo_hash|
         @repos << hash_to_struct(repo_hash)
       end
-      
+
       if last_pagination?
         last_stars = @repos.last[:stars]
         @curr_url = @base_url + @search_path + query("stars:<=#{last_stars}")

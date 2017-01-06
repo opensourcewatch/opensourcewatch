@@ -66,6 +66,14 @@ namespace :dispatch do
   end
 end
 
+namespace :git_api do
+  require_relative '../api/github_wrapper.rb'
+
+  task :repos do
+    paginate
+  end
+end
+
 task "scrape:all" => ["ruby_gems:gems", "github:all"]
 
 task "gems:gscores" => :environment do
