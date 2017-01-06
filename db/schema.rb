@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170106011704) do
+ActiveRecord::Schema.define(version: 20170106193614) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -33,18 +33,6 @@ ActiveRecord::Schema.define(version: 20170106011704) do
     t.integer  "forks"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-  end
-
-  create_table "ruby_gems", force: :cascade do |t|
-    t.string   "url"
-    t.string   "name"
-    t.integer  "downloads"
-    t.datetime "created_at",   null: false
-    t.datetime "updated_at",   null: false
-    t.integer  "stars"
-    t.float    "score"
-    t.text     "description"
-    t.integer  "contributors"
   end
 
   create_table "users", force: :cascade do |t|
