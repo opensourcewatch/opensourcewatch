@@ -1,4 +1,4 @@
-class GithubWrapper
+class GithubSearchWrapper
   @BASE_URL = 'https://api.github.com/search/repositories'
   @access_token = ENV["GITHUB_API_KEY"]
 

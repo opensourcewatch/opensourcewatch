@@ -66,10 +66,10 @@ namespace :dispatch do
   end
 end
 
-namespace :git_api do
+namespace :github_api do
   require_relative '../api/github_wrapper.rb'
 
-  task :repos => :environment do
+  task :search_repos => :environment do
     GithubWrapper.paginate_repos
   end
 end
