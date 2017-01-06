@@ -2,7 +2,7 @@ require 'nokogiri'
 require 'open-uri'
 require 'httplog'
 
-# TODO: This is depracated
+# TODO: This is depracated, extract to its own repository for public use 
 # Scraper for Ruby Gem data from RubyGems.org
 class RubyGemsScraper
   @ruby_gems_base_url = 'https://rubygems.org'
