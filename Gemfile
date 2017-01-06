@@ -19,6 +19,7 @@ gem 'puma', '~> 3.0' # App server
 gem "pg" # Use PostGreSQL
 gem 'redis'
 gem 'figaro'
+gem 'activerecord-import'
 
 # Better search
 gem 'elasticsearch-model'

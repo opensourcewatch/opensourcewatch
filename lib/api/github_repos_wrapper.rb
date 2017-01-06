@@ -26,16 +26,8 @@ class GithubReposWrapper
     private
 
     def create_repos
-      puts "Upserting Repository."
-      Repository.create(@repos)
-      # Repository.create(github_id: repo['id'],
-      #                   name: repo['name'],
-      #                   url: repo['html_url'],
-      #                   language:  repo['language'],
-      #                   stars:  repo['stargazers_count'],
-      #                   forks: repo['forks']
-      # )
-      puts "Repository Upserted"
+      puts "Creating Repository."
+      Repository.import(@repos)
     end
 
     def query(id)
@@ -50,14 +42,14 @@ class GithubReposWrapper
 
     def parse_repos
       @repos = JSON.parse(@resp.body).map do |repo|
-        {
+        Repository.new({
           github_id: repo['id'],
           name: repo['name'],
           url: repo['html_url'],
           language:  repo['language'],
           stars:  repo['stargazers_count'],
           forks: repo['forks']
-        }
+        })
       end
       create_repos
     end
