@@ -27,15 +27,15 @@ namespace :github do
   require_relative "../scraper/github_scraper"
 
   # Get github repo information for each gem
-  task :gems => :environment do |t|
+  task :repos => :environment do |t|
     babysitter(t) do
-      GithubScraper.update_gem_data
+      GithubScraper.update_repo_data
     end
   end
 
   # Get commit info from each repo
+  # TODO: make args take in the 3 options for lib_commits
   task :commits, [:infinite] => :environment do |t, args|
-    options = args.to_h
     if args.infinite == "true"
       babysitter(t) do
         loop do
@@ -49,7 +49,7 @@ namespace :github do
     end
   end
 
-  task :all => [:gems, :commits]
+  task :all => [:repos, :commits]
 end
 
 # Get commit info from each repo using the redis queue

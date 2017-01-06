@@ -1,12 +1,11 @@
 require_relative './noko_doc'
 
-# Scrapes data for Gems and Users on Github.com
+# Scrapes data for Repositories and Users on Github.com
 class GithubScraper
   @github_doc = NokoDoc.new
   @current_lib = nil
   @SECONDS_BETWEEN_REQUESTS = 0
 
-  # TODO: refactor to use Repository instead of Gem
   class << self
     attr_reader :github_doc # TODO: is this needed?
     # Gets the following:
@@ -17,27 +16,27 @@ class GithubScraper
     # - Github: https://github.com/rspec/rspec/blob/master/README.md
     # - Raw: https://raw.githubusercontent.com/rspec/rspec/master/README.md
     #
-    # gems: gems whose repo data will be updated
-    def update_gem_data(gems = RubyGem.all)
-      gems.each do |gem|
+    # repos: repos whose repo data will be updated
+    def update_repo_data(repos = Repository.all)
+      repos.each do |repo|
         begin
-          @current_lib = gem
+          @current_lib = repo
           break unless @github_doc.new_doc(@current_lib.url)
-          puts "Updated gem #{@current_lib.name}"
+          puts "Updated repo #{@current_lib.name}"
 
-          # TODO: add to update_gem_data to get repo name and owner name
+          # TODO: add to update_repo_data to get repo name and owner name
           # owner, repo_name = @current_lib.url[/\/\w+\/\w+/].split('/)
 
-          # Parse the page and update gem
-          gem.update(stars: repo_stars, description: repo_description)
+          # Parse the page and update repo
+          repo.update(stars: repo_stars, description: repo_description)
         rescue OpenURI::HTTPError => e
-          gem.destroy
-          puts "DESTROYED Gem #{@current_lib.name} : its Github URL #{@current_lib.url} resulted in #{e.message}"
+          repo.destroy
+          puts "DESTROYED #{@current_lib.name} : its Github URL #{@current_lib.url} resulted in #{e.message}"
         end
       end
     end
 
-    # Retrieves the commits for each RubyGem
+    # Retrieves the commits for each Repository
     #
     # NOTE: you can use all options together, but whichever one ends first
     #       will be the one that stops the scraper
@@ -50,7 +49,7 @@ class GithubScraper
     def lib_commits(scrape_limit_opts={})
       handle_scrape_limits(scrape_limit_opts)
       catch :scrape_limit_reached do
-        @libraries.each do |lib|
+        @repositories.each do |lib|
           @current_lib = lib
           commits_path = @current_lib.url + '/commits/master'
 
@@ -110,7 +109,7 @@ class GithubScraper
 
     # this can be added to the other scraper
     def handle_scrape_limits(opts={})
-      @libraries = opts[:libraries] || RubyGem.all
+      @repositories = opts[:repositories] || Repository.all
       @page_limit = opts[:page_limit] || Float::INFINITY
       @user_limit = opts[:user_limit] || Float::INFINITY
     end
@@ -153,11 +152,10 @@ class GithubScraper
           github_identifier = commit_info.css("a.sha").text.strip
 
           unless Commit.exists?(github_identifier: github_identifier)
-            # TODO: migration for gem_id fk
             Commit.create(
               message: message,
               user: user,
-              ruby_gem: @current_lib,
+              repository: @current_lib,
               github_identifier: github_identifier
               )
             puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
