@@ -1,40 +1,37 @@
 source 'https://rubygems.org'
 ruby "2.3"
 
-# Scraping
-gem 'nokogiri'
+gem 'nokogiri'  # Scraping
+gem 'httplog'   # Log requests
 
 # Assets
-# Styles
 gem "bootstrap-sass"
-# Use SCSS for stylesheets
-gem 'sass-rails', '~> 5.0'
-# Use Uglifier as compressor for JavaScript assets
-gem 'uglifier', '>= 1.3.0'
-# Use jquery as the JavaScript library
-gem 'jquery-rails'
+gem 'sass-rails', '~> 5.0' # Use SCSS for stylesheets
+gem 'uglifier', '>= 1.3.0' # Compressor for JavaScript assets
+gem 'jquery-rails' # JavaScript library
+
 # Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
 gem 'turbolinks', '~> 5'
 
-# Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
+# Infrastructure
 gem 'rails', '~> 5.0.0', '>= 5.0.0.1'
-# Use Puma as the app server
-gem 'puma', '~> 3.0'
+gem 'puma', '~> 3.0' # App server
+gem "pg" # Use PostGreSQL
+gem 'redis'
 
 # Better search
 gem 'elasticsearch-model'
 gem 'elasticsearch-rails'
 
-group :test do
-end
-
 group :development, :test do
-  # Use sqlite3 as the database for Active Record
-  gem 'sqlite3'
-  gem 'pry'
-  gem 'pry-nav'
+  gem 'pry'     # Debugging
+  gem 'pry-nav' # Navigate while in pry console
+
+  # Fabricate data
   gem 'fabrication'
   gem 'faker'
+
+  # Testing
   gem 'rspec-rails'
 end
 
@@ -45,8 +42,4 @@ group :development do
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
   gem 'spring'
   gem 'spring-watcher-listen', '~> 2.0.0'
-end
-
-group :production do
-  gem "pg"
 end
