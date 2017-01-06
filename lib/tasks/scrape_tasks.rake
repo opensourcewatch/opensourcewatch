@@ -70,7 +70,7 @@ namespace :git_api do
   require_relative '../api/github_wrapper.rb'
 
   task :repos => :environment do
-    paginate
+    GithubWrapper.paginate_repos
   end
 end
 
