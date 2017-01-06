@@ -30,7 +30,7 @@ class GithubReposWrapper
     private
 
     def create_repos
-      puts "Creating Repository."
+      puts "Creating 100 Repositories."
       Repository.import(@repos)
     end
 
