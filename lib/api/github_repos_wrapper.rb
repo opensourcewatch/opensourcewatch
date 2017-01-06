@@ -6,7 +6,7 @@ class GithubReposWrapper
   class << self
     # stop_id: compares the stop_id with next_id and doesn't make anymore
     # =>       requests if next_id >= stop_id
-    def paginate_repos(start_id = '0', stop_id = nil)
+    def paginate_repos(start_id: '0', stop_id: nil)
       @stop_id = stop_id.to_i if stop_id
       # Set initial kickoff url to paginate from
       @current_url = @BASE_URL + query(start_id)
