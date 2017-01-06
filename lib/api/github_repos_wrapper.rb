@@ -1,11 +1,15 @@
 class GithubReposWrapper
   @BASE_URL = 'https://api.github.com/repositories'
   @access_token = ENV["GITHUB_API_KEY"]
+  @stop_id = nil
 
   class << self
-    def paginate_repos(last_id_seen = '0')
+    # stop_id: compares the stop_id with next_id and doesn't make anymore
+    # =>       requests if next_id >= stop_id
+    def paginate_repos(start_id = '0', stop_id = nil)
+      @stop_id = stop_id.to_i if stop_id
       # Set initial kickoff url to paginate from
-      @current_url = @BASE_URL + query(last_id_seen)
+      @current_url = @BASE_URL + query(start_id)
       # Rate limiting
       loop do
         # Pagination
@@ -36,8 +40,13 @@ class GithubReposWrapper
 
     def handle_request
         parse_repos
-
-        @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
+        next_url =  @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
+        next_id = next_url.split('=').last.to_i
+        if @stop_id && @stop_id < next_id
+          puts "Stopping requests and exiting: stop limit reached at id:#{next_id}"
+          abort
+        end
+        @current_url = next_url
     end
 
     def parse_repos

@@ -75,8 +75,8 @@ namespace :github_api do
   end
 
   require_relative '../api/github_repos_wrapper'
-  task :public_repos => :environment do
-    GithubReposWrapper.paginate_repos
+  task :public_repos, [:start_id, :stop_id] => :environment do |t, args|
+    GithubReposWrapper.paginate_repos(*args)
   end
 end
 
