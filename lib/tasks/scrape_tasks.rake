@@ -60,11 +60,6 @@ namespace :github_api do
   end
 end
 
-task "repos:gscores" => :environment do
-  # TODO: update score doesn't exist yet
-  Repository.update_score
-end
-
 def babysitter(task = NullTask.new)
   # Handles additional logging and error handling for the task
   start_time = Time.now
