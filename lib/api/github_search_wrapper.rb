@@ -1,7 +1,7 @@
 class GithubSearchWrapper
   @BASE_URL = 'https://api.github.com/search/repositories'
   @access_token = ENV["GITHUB_API_KEY"]
-  
+
   class << self
     def paginate_repos(query_param = 'stars:>1')
       # Set initial kickoff url to paginate from
@@ -23,6 +23,48 @@ class GithubSearchWrapper
 
     private
 
+    def handle_request
+      @first_repo_stars_of_first_pagination = JSON.parse(@resp.body)['items'].first['stargazers_count'] if first_pagination?
+
+      if repeat_pagination?
+        puts "Aborting due to repeating loop"
+        abort
+      elsif last_pagination?
+        last_stars = JSON.parse(@resp.body).last['stargazers_count']
+        @current_url = @BASE_URL + query("stars:<=#{last_stars}")
+      else
+        @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
+      end
+
+      parse_repos
+    end
+
+    def query(param)
+      @query = "?q=''&q=#{param}&sort=stars&order=desc"
+    end
+
+    def first_pagination?
+      !@resp.headers['link'].include?('rel="first"')
+    end
+
+    def repeat_pagination?
+      last_pagination? && first_and_last_repo_star_count_equal?
+    end
+
+    def last_pagination?
+      !@resp.headers['link'].include?('rel="last"')
+    end
+
+    def first_and_last_repo_star_count_equal?
+      JSON.parse(@resp.body)['items'].last['stargazers_count'] == @first_repo_stars_of_first_pagination
+    end
+
+    def parse_repos
+      JSON.parse(@resp.body)['items'].each do |repo_hash|
+        upsert_lib(repo_hash)
+      end
+    end
+
     def upsert_lib(repo)
       puts "Upserting Repository."
       Repository.find_or_create_by(github_id: repo['id']) do |repository|
@@ -34,38 +76,6 @@ class GithubSearchWrapper
         repository.forks = repo['forks']
       end
       puts "Repository Upserted"
-    end
-
-    def query(param)
-      @query = "?q=''&q=#{param}&sort=stars&order=desc"
-    end
-
-    def last_pagination?
-      !@resp.headers['link'].include?('rel="last"')
-    end
-
-    def handle_request
-      if last_pagination? && last_repo_already_stored?
-        puts "Aborting due to repeating loop"
-        abort
-      elsif last_pagination?
-        last_stars = Repository.last.stars
-        @current_url = @BASE_URL + query("stars:<=#{last_stars}")
-      else
-        @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
-      end
-
-      parse_repos
-    end
-
-    def last_repo_already_stored?
-      Repository.find_by("github_id=#{JSON.parse(@resp.body)['items'].last['id']}")
-    end
-
-    def parse_repos
-      JSON.parse(@resp.body)['items'].each do |repo_hash|
-        upsert_lib(repo_hash)
-      end
     end
 
     def search_request
