@@ -46,16 +46,23 @@ class GithubRepoScraper
     # user_limit: max number of users to add
     def commits(scrape_limit_opts={}, get_repo_meta=false)
       handle_scrape_limits(scrape_limit_opts)
+
       catch :scrape_limit_reached do
         @repositories.each do |repo|
           @current_repo = repo
           commits_path = @current_repo.url + '/commits/master'
-          puts "Scraping #{repo.name} commits"
-
           break unless @github_doc.new_doc(commits_path)
 
-          repo.update(watchers: repo_watchers, stars: repo_stars, forks: repo_forks) if get_repo_meta
+          # Grab general meta data that is available on the commits page
+          # if told to do so
+          repo.update(
+            watchers: repo_watchers,
+            stars: repo_stars,
+            forks: repo_forks,
+            open_issues: repo_open_issues
+            ) if get_repo_meta
 
+          puts "Scraping #{repo.name} commits"
           catch :recent_commits_finished do
             traverse_commit_pagination
           end
@@ -149,6 +156,10 @@ class GithubRepoScraper
 
     def repo_forks
       select_social_count(3)
+    end
+
+    def repo_open_issues
+      @github_doc.doc.css("a.reponav-item span:nth-child(2).counter").text.to_i
     end
   end
 end
