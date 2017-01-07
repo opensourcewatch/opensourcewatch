@@ -16,7 +16,7 @@ class Repository < ActiveRecord::Base
   def activity_score
     # TODO: we should only get the commits for a given time period, not all the commits on a repository
     # TODO: Add migration and scraping for issues to the commit path as an option, then uncomment below
-    commits.count #+ issues.to_i
+    commits.count #+ open_issues.to_i
   end
 
   def significance_score
