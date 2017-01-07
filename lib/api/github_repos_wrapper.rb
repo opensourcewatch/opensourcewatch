@@ -30,8 +30,10 @@ class GithubReposWrapper
     private
 
     def create_repos
-      puts "Creating 100 Repositories."
-      Repository.import(@repos)
+      puts "Creating 1000 Repositories."
+      time_to_execute do
+        Repository.import(@repos)
+      end
     end
 
     def query(id)
@@ -39,7 +41,9 @@ class GithubReposWrapper
     end
 
     def handle_request
+        # TODO: We can speed this up by saving more records, say 1000 in memory before importing to the database
         parse_repos
+        create_repos
         next_url =  @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
         next_id = next_url.split('=').last.to_i
         if @stop_id && @stop_id < next_id
@@ -60,7 +64,6 @@ class GithubReposWrapper
           forks: repo['forks']
         })
       end
-      create_repos
     end
 
     def search_request
@@ -80,6 +83,12 @@ class GithubReposWrapper
 
     def time_to_reset
       @resp.headers['x-ratelimit-reset'].to_i
+    end
+
+    def time_to_execute
+      start_time = Time.now
+      yield
+      puts "Executed in #{Time.now - start_time}"
     end
   end
 end

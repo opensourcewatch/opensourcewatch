@@ -10,6 +10,7 @@ class ScraperDispatcher
   def self.redis_requeue
     redis.flushall
 
+    # TODO: complete this...
     count = 0
     redis.pipelined do
       Repository.in_batches do |batch|

@@ -1,56 +1,35 @@
-# TODO: extract with the ruby gems scraper and bundle the
-# ruby_gems namespace rake tasks with it
-namespace :ruby_gems do
-  require_relative "../scraper/ruby_gems_scraper"
-
-  # Get all gems from ruby gems
-  # Can call for a single letter and x amount of gems:
-  #   ex. rake scrape:gems[F, 20]
-  task :gems, [:letters_to_traverse, :upsert_limit] => :environment do |t, args|
-    options = args.to_h
-    if args.letters_to_traverse
-      options[:letters_to_traverse] = args.letters_to_traverse.split(" ")
-    end
-
-    babysitter do
-      RubyGemsScraper.upsert_all_gems(options)
-    end
-  end
-
-  task :top_100 => :environment do |t|
-    babysitter do
-      RubyGemsScraper.upsert_top_100_gems
-    end
-  end
-end
-
 namespace :github do
-  require_relative "../scraper/github_scraper"
+  require_relative "../scraper/github_repo_scraper"
+  require_relative "../scraper/github_user_scraper"
 
   # Get github repo information for each repo
   task :repos => :environment do |t|
     babysitter(t) do
-      GithubScraper.update_repo_data
+      GithubRepoScraper.update_repo_data
     end
+  end
+
+  task :users => :environment do |t|
+    GithubUserScraper.update_user_data
   end
 
   # Get commit info from each repo
   # TODO: make args take in the 3 options for lib_commits
-  task :commits, [:infinite] => :environment do |t, args|
+  task :commits, [:infinite, :fetch_meta] => :environment do |t, args|
     if args.infinite == "true"
       babysitter(t) do
         loop do
-          GithubScraper.lib_commits
+          GithubRepoScraper.commits({}, args.fetch_meta)
         end
       end
     else
       babysitter(t) do
-        GithubScraper.lib_commits
+        GithubRepoScraper.commits({}, args.fetch_meta)
       end
     end
   end
 
-  task :all => [:repos, :commits]
+  task :all => [:repos, :commits, :users]
 end
 
 # Get commit info from each repo using the redis queue
@@ -119,3 +98,30 @@ class NullTask
     @desc = "NO DESCRIPTION"
   end
 end
+
+# TODO: extract with the ruby gems scraper and bundle the
+# ruby_gems namespace rake tasks with it
+namespace :ruby_gems do
+  require_relative "../scraper/ruby_gems_scraper"
+
+  # Get all gems from ruby gems
+  # Can call for a single letter and x amount of gems:
+  #   ex. rake scrape:gems[F, 20]
+  task :gems, [:letters_to_traverse, :upsert_limit] => :environment do |t, args|
+    options = args.to_h
+    if args.letters_to_traverse
+      options[:letters_to_traverse] = args.letters_to_traverse.split(" ")
+    end
+
+    babysitter do
+      RubyGemsScraper.upsert_all_gems(options)
+    end
+  end
+
+  task :top_100 => :environment do |t|
+    babysitter do
+      RubyGemsScraper.upsert_top_100_gems
+    end
+  end
+end
+###########################
