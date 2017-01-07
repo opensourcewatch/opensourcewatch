@@ -6,9 +6,7 @@ class GithubRepoScraper
   @current_repo = nil
   @SECONDS_BETWEEN_REQUESTS = 0
 
-  # TODO: repo_stars, repo_description etc. are common methods but aren't valid unless we are on a repo
   class << self
-    attr_reader :github_doc # TODO: is this needed?
     # Gets the following:
     # - number of stars the project has
     # - raw README.md file
@@ -46,7 +44,6 @@ class GithubRepoScraper
     # repositories: repos to be scraped for data
     # page_limit: maximum number of pages to iterate
     # user_limit: max number of users to add
-    # TODO: expand rake task to pass in these options
     def commits(scrape_limit_opts={}, get_repo_meta=false)
       handle_scrape_limits(scrape_limit_opts)
       catch :scrape_limit_reached do
@@ -57,15 +54,11 @@ class GithubRepoScraper
 
           break unless @github_doc.new_doc(commits_path)
 
-          # TODO: test forks
           repo.update(watchers: repo_watchers, stars: repo_stars, forks: repo_forks) if get_repo_meta
 
           catch :recent_commits_finished do
             traverse_commit_pagination
           end
-
-          # TODO: why is this here?
-          @page_limit
         end
       end
     end
