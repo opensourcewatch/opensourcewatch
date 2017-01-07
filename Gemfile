@@ -21,6 +21,8 @@ gem 'redis'
 gem 'figaro'
 gem 'activerecord-import'
 
+gem 'therubyracer'
+
 # Better search
 gem 'elasticsearch-model'
 gem 'elasticsearch-rails'
