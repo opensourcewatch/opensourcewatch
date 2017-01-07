@@ -13,10 +13,10 @@ class GithubSearchWrapper
 
           rate_requests_remain? ? handle_request : break
         end
-        wait_time = time_to_reset - Time.now
+        wait_time = Time.at(time_to_reset) - Time.now
 
         puts "Out of requests... Sleeping ~#{wait_time} s"
-        puts "Beginning at ~#{Time.at(time_to_reset)}"
+        puts "Beginning at ~#{Time.at(time_to_reset)}" 
 
         sleep wait_time unless wait_time.negative?
       end
