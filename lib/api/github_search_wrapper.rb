@@ -24,10 +24,10 @@ class GithubSearchWrapper
     private
 
     def handle_request
-      @parsed_repos = JSON.parse(resp.body['items'])
+      @parsed_repos = JSON.parse(@resp.body)['items']
       @first_repo_stars_of_first_pagination = @parsed_repos.first['stargazers_count'] if first_pagination?
 
-      parse_repos
+      upsert_repos
 
       if repeat_pagination?
         puts "Aborting due to repeating loop"
@@ -60,23 +60,19 @@ class GithubSearchWrapper
       @parsed_repos.last['stargazers_count'] == @first_repo_stars_of_first_pagination
     end
 
-    def parse_repos
-      @parsed_repos.each do |repo_hash|
-        upsert_lib(repo_hash)
+    def upsert_repos
+      @parsed_repos.each do |repo|
+        puts "Upserting Repository."
+        Repository.find_or_create_by(github_id: repo['id']) do |repository|
+          repository.name = repo['name']
+          repository.github_id = repo['id']
+          repository.url = repo['html_url']
+          repository.language = repo['language']
+          repository.stars = repo['stargazers_count']
+          repository.forks = repo['forks']
+        end
+        puts "Repository Upserted"
       end
-    end
-
-    def upsert_lib(repo)
-      puts "Upserting Repository."
-      Repository.find_or_create_by(github_id: repo['id']) do |repository|
-        repository.name = repo['name']
-        repository.github_id = repo['id']
-        repository.url = repo['html_url']
-        repository.language = repo['language']
-        repository.stars = repo['stargazers_count']
-        repository.forks = repo['forks']
-      end
-      puts "Repository Upserted"
     end
 
     def search_request
