@@ -1,11 +1,12 @@
 require_relative './noko_doc'
 
 # Scrapes data for Repositories and Users on Github.com
-class GithubScraper
+class GithubRepoScraper
   @github_doc = NokoDoc.new
-  @current_lib = nil
+  @current_repo = nil
   @SECONDS_BETWEEN_REQUESTS = 0
 
+  # TODO: repo_stars, repo_description etc. are common methods but aren't valid unless we are on a repo
   class << self
     attr_reader :github_doc # TODO: is this needed?
     # Gets the following:
@@ -20,18 +21,18 @@ class GithubScraper
     def update_repo_data(repos = Repository.all)
       repos.each do |repo|
         begin
-          @current_lib = repo
-          break unless @github_doc.new_doc(@current_lib.url)
-          puts "Updated repo #{@current_lib.name}"
+          @current_repo = repo
+          break unless @github_doc.new_doc(@current_repo.url)
+          puts "Updated repo #{@current_repo.name}"
 
           # TODO: add to update_repo_data to get repo name and owner name
-          # owner, repo_name = @current_lib.url[/\/\w+\/\w+/].split('/)
+          # owner, repo_name = @current_repo.url[/\/\w+\/\w+/].split('/)
 
           # Parse the page and update repo
-          repo.update(stars: repo_stars, description: repo_description)
+          repo.update(stars: repo_stars, watchers: repo_watchers, forks: repo_forks, description: repo_description)
         rescue OpenURI::HTTPError => e
           repo.destroy
-          puts "DESTROYED #{@current_lib.name} : its Github URL #{@current_lib.url} resulted in #{e.message}"
+          puts "DESTROYED #{@current_repo.name} : its Github URL #{@current_repo.url} resulted in #{e.message}"
         end
       end
     end
@@ -42,20 +43,22 @@ class GithubScraper
     #       will be the one that stops the scraper
     #
     # Options
-    # libraries: libraries whose repos will be scraped for data
+    # repositories: repos to be scraped for data
     # page_limit: maximum number of pages to iterate
     # user_limit: max number of users to add
     # TODO: expand rake task to pass in these options
-    def lib_commits(scrape_limit_opts={})
+    def commits(scrape_limit_opts={}, get_repo_meta=false)
       handle_scrape_limits(scrape_limit_opts)
       catch :scrape_limit_reached do
-        @repositories.each do |lib|
-          @current_lib = lib
-          commits_path = @current_lib.url + '/commits/master'
-
-          puts "Scraping #{lib.name} commits"
+        @repositories.each do |repo|
+          @current_repo = repo
+          commits_path = @current_repo.url + '/commits/master'
+          puts "Scraping #{repo.name} commits"
 
           break unless @github_doc.new_doc(commits_path)
+
+          # TODO: test forks
+          repo.update(watchers: repo_watchers, stars: repo_stars, forks: repo_forks) if get_repo_meta
 
           catch :recent_commits_finished do
             traverse_commit_pagination
@@ -67,46 +70,7 @@ class GithubScraper
       end
     end
 
-    # 2 agents for user data and stars/followers data
-    def update_user_data
-      User.all.each do |user|
-        break unless @github_doc.new_doc("https://github.com/#{user.github_username}")
-        followers = @github_doc.doc.css('a[href="/#{user.github_username}?tab=followers .counter"]').text.strip
-        name = @github_doc.doc.css('.vcard-fullname').text.strip
-
-        personal_repos_doc = NokoDoc.new_temp_doc("https://github.com/#{user.github_username}?page=1&tab=repositories")
-        break unless personal_repos_doc
-        personal_star_count = 0
-        pagination_count = 1
-
-        loop do
-          personal_repos_doc.css('a[aria-label="Stargazers"]').each do |star_count|
-            personal_star_count += star_count.text.strip.to_i
-          end
-
-          break if personal_repos_doc.css('.next_page.disabled').any?
-
-          pagination_count += 1
-          page_regex = /page=#{pagination_count}/
-
-          personal_repos_doc = NokoDoc.new_temp_doc("https://github.com/#{user.github_username}?page=1&tab=repositories".gsub(/page=\d/, "page=#{pagination_count}"))
-          break unless personal_repos_doc
-        end
-
-        User.update(user.id,
-                    name: name,
-                    followers: followers,
-                    stars: personal_star_count)
-      end
-    end
-
     private
-
-    # Avoid looking too robotic to Github
-    def random_sleep
-      sleep [3].sample
-    end
-
     # this can be added to the other scraper
     def handle_scrape_limits(opts={})
       @repositories = opts[:repositories] || Repository.all
@@ -155,7 +119,7 @@ class GithubScraper
             Commit.create(
               message: message,
               user: user,
-              repository: @current_lib,
+              repository: @current_repo,
               github_identifier: github_identifier
               )
             puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
@@ -166,9 +130,10 @@ class GithubScraper
       end
     end
 
-    def repo_description
+    def repo_readme_content
+      # NOTE: Only available on the code subpage of the repo
       if @github_doc.doc.at('td span:contains("README")')
-        raw_file_url = @current_lib.url.gsub('github', 'raw.githubusercontent') \
+        raw_file_url = @current_repo.url.gsub('github', 'raw.githubusercontent') \
                           + '/master/README.md'
         NokoDoc.new_temp_doc(raw_file_url).css('body p').text
       else
@@ -176,9 +141,21 @@ class GithubScraper
       end
     end
 
-    def repo_stars
-      @github_doc.doc.css('ul.pagehead-actions li:nth-child(2) .social-count')
+    def select_social_count(child=nil)
+      @github_doc.doc.css("ul.pagehead-actions li:nth-child(#{child}) .social-count")
         .text.strip.gsub(',', '').to_i
+    end
+
+    def repo_watchers
+      select_social_count(1)
+    end
+
+    def repo_stars
+      select_social_count(2)
+    end
+
+    def repo_forks
+      select_social_count(3)
     end
   end
 end
