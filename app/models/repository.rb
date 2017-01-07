@@ -4,10 +4,10 @@ class Repository < ActiveRecord::Base
   has_many :commits
 
   def update_score
-    update(priority_score: priority_score)
+    update(score: score)
   end
 
-  def priority_score
+  def score
     activity_score + significance_score
   end
 
