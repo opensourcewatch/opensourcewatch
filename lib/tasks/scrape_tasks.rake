@@ -71,12 +71,12 @@ end
 namespace :github_api do
   task :search_repos => :environment do
     require_relative '../api/github_search_wrapper.rb'
-    GithubWrapper.paginate_repos
+    GithubSearchWrapper.paginate_repos
   end
 
   task :public_repos, [:start_id, :stop_id] => :environment do |t, args|
     require_relative '../api/github_repos_wrapper'
-    
+
     GithubReposWrapper.paginate_repos(args.to_h)
   end
 end

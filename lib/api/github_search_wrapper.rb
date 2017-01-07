@@ -1,7 +1,7 @@
 class GithubSearchWrapper
   @BASE_URL = 'https://api.github.com/search/repositories'
   @access_token = ENV["GITHUB_API_KEY"]
-
+  
   class << self
     def paginate_repos(query_param = 'stars:>1')
       # Set initial kickoff url to paginate from
@@ -45,14 +45,21 @@ class GithubSearchWrapper
     end
 
     def handle_request
-        parse_repos
+      if last_pagination? && last_repo_already_stored?
+        puts "Aborting due to repeating loop"
+        abort
+      elsif last_pagination?
+        last_stars = Repository.last.stars
+        @current_url = @BASE_URL + query("stars:<=#{last_stars}")
+      else
+        @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
+      end
 
-        if last_pagination?
-          last_stars = Repository.last.stars
-          @current_url = @BASE_URL + query("stars:<=#{last_stars}")
-        else
-          @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
-        end
+      parse_repos
+    end
+
+    def last_repo_already_created?
+      Repository.find_by("github_id=#{JSON.parse(@resp.body)['items'].last['id']}")
     end
 
     def parse_repos
@@ -63,8 +70,8 @@ class GithubSearchWrapper
 
     def search_request
       Faraday.get(@current_url) do |req|
-          req.headers['Authorization'] = "token #{@access_token}"
-          req.headers['Accept'] = 'application/vnd.github.v3+json'
+        req.headers['Authorization'] = "token #{@access_token}"
+        req.headers['Accept'] = 'application/vnd.github.v3+json'
       end
     end
 
