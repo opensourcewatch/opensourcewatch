@@ -4,10 +4,10 @@ class GithubSearchWrapper
   @repos_processed = 0
 
   class << self
-    def paginate_repos(query_param = 'stars:>1')
+    def paginate_repos
       # Set initial kickoff url to paginate from
       @start_time = Time.now
-      @current_url = @BASE_URL + query(query_param)
+      handle_first_round_of_pagination
       loop do
         loop do
           @resp = search_request
@@ -35,9 +35,35 @@ class GithubSearchWrapper
 
     private
 
+    def handle_first_round_of_pagination
+      @current_url = @BASE_URL + "?q=stars:>1&sort=stars&order=desc"
+      loop do
+        @resp = search_request
+        @parsed_repos = JSON.parse(@resp.body)['items']
+
+        puts "Request: #{@current_url}"
+
+        process_repos
+
+        if last_pagination?
+          @star_count = @parsed_repos.last['stargazers_count'].to_i
+          @current_url = @BASE_URL + "?q=stars:#{@star_count}"
+          break
+        else
+          @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
+        end
+      end
+    end
+
     def handle_request
       @parsed_repos = JSON.parse(@resp.body)['items']
+      if no_repos_for_star_count?
+        @current_url = @BASE_URL + "?q=stars:#{@star_count -= 1}"
+        return
+      end
       @first_repo_stars_of_first_pagination = @parsed_repos.first['stargazers_count'] if first_pagination?
+
+      puts "Request: #{@current_url}"
 
       process_repos
 
@@ -45,19 +71,22 @@ class GithubSearchWrapper
         puts "Aborting due to repeating loop"
         abort
       elsif last_pagination?
-        last_stars = @parsed_repos.last['stargazers_count']
-        @current_url = @BASE_URL + query("stars:<=#{last_stars}")
+        @current_url = @BASE_URL + "?q=stars:#{@star_count -= 1}"
       else
         @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
       end
     end
 
-    def query(param)
-      @query = "?q=''&q=#{param}&sort=stars&order=desc"
+    def first_round_of_pagination?
+      @star_count.nil?
+    end
+
+    def no_repos_for_star_count?
+      @parsed_repos.empty?
     end
 
     def first_pagination?
-      !@resp.headers['link'].include?('rel="first"')
+      @resp.headers['link'] && !@resp.headers['link'].include?('rel="first"')
     end
 
     def repeat_pagination?
@@ -65,7 +94,7 @@ class GithubSearchWrapper
     end
 
     def last_pagination?
-      !@resp.headers['link'].include?('rel="last"')
+      @resp.headers['link'] && !@resp.headers['link'].include?('rel="last"') || !@resp.headers['link']
     end
 
     def first_and_last_repo_star_count_equal?
@@ -73,7 +102,7 @@ class GithubSearchWrapper
     end
 
     def process_repos
-      puts "Processing 30 Repositories."
+      puts "Processing #{@parsed_repos.count} Repositories."
       repos = @parsed_repos.map do |repo|
         Repository.new({
           name: repo['name'],
@@ -85,7 +114,7 @@ class GithubSearchWrapper
         })
       end
       Repository.import(repos)
-      puts "#{@repos_processed += 30} Repositories Processed in #{minutes_running} minutes."
+      puts "#{@repos_processed += @parsed_repos.count} Repositories Processed in #{minutes_running} minutes."
     end
 
     def minutes_running
