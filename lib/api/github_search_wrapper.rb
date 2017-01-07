@@ -58,7 +58,7 @@ class GithubSearchWrapper
       parse_repos
     end
 
-    def last_repo_already_created?
+    def last_repo_already_stored?
       Repository.find_by("github_id=#{JSON.parse(@resp.body)['items'].last['id']}")
     end
 
