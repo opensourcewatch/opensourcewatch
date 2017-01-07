@@ -13,58 +13,73 @@ class GithubSearchWrapper
 
           rate_requests_remain? ? handle_request : break
         end
-        puts "Out of requests... Sleeping"
-        puts "Beginning at #{time_to_reset}"
+        wait_time = Time.at(time_to_reset) - Time.now
 
-        wait = Time.at(time_to_reset) - Time.now
-        sleep wait unless wait.negative?
+        puts "Out of requests... Sleeping ~#{wait_time} s"
+        puts "Beginning at ~#{Time.at(time_to_reset)}" 
+
+        sleep wait_time unless wait_time.negative?
       end
     end
 
     private
 
-    def upsert_lib(repo)
-      puts "Upserting Repository."
-      Repository.find_or_create_by(github_id: repo['id']) do |repository|
-        repository.name = repo['name']
-        repository.github_id = repo['id']
-        repository.url = repo['html_url']
-        repository.language = repo['language']
-        repository.stars = repo['stargazers_count']
-        repository.forks = repo['forks']
+    def handle_request
+      @parsed_repos = JSON.parse(@resp.body)['items']
+      @first_repo_stars_of_first_pagination = @parsed_repos.first['stargazers_count'] if first_pagination?
+
+      upsert_repos
+
+      if repeat_pagination?
+        puts "Aborting due to repeating loop"
+        abort
+      elsif last_pagination?
+        last_stars = @parsed_repos.last['stargazers_count']
+        @current_url = @BASE_URL + query("stars:<=#{last_stars}")
+      else
+        @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
       end
-      puts "Repository Upserted"
     end
 
     def query(param)
       @query = "?q=''&q=#{param}&sort=stars&order=desc"
     end
 
+    def first_pagination?
+      !@resp.headers['link'].include?('rel="first"')
+    end
+
+    def repeat_pagination?
+      last_pagination? && first_and_last_repo_star_count_equal?
+    end
+
     def last_pagination?
       !@resp.headers['link'].include?('rel="last"')
     end
 
-    def handle_request
-        parse_repos
-
-        if last_pagination?
-          last_stars = Repository.last.stars
-          @current_url = @BASE_URL + query("stars:<=#{last_stars}")
-        else
-          @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
-        end
+    def first_and_last_repo_star_count_equal?
+      @parsed_repos.last['stargazers_count'] == @first_repo_stars_of_first_pagination
     end
 
-    def parse_repos
-      JSON.parse(@resp.body)['items'].each do |repo_hash|
-        upsert_lib(repo_hash)
+    def upsert_repos
+      @parsed_repos.each do |repo|
+        puts "Upserting Repository."
+        Repository.find_or_create_by(github_id: repo['id']) do |repository|
+          repository.name = repo['name']
+          repository.github_id = repo['id']
+          repository.url = repo['html_url']
+          repository.language = repo['language']
+          repository.stars = repo['stargazers_count']
+          repository.forks = repo['forks']
+        end
+        puts "Repository Upserted"
       end
     end
 
     def search_request
       Faraday.get(@current_url) do |req|
-          req.headers['Authorization'] = "token #{@access_token}"
-          req.headers['Accept'] = 'application/vnd.github.v3+json'
+        req.headers['Authorization'] = "token #{@access_token}"
+        req.headers['Accept'] = 'application/vnd.github.v3+json'
       end
     end
 

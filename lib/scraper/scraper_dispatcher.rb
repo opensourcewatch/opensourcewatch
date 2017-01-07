@@ -11,11 +11,19 @@ class ScraperDispatcher
     redis.flushall
 
     count = 0
-    Repository.all.each do |repo|
-      redis.rpush('repositories', repo.id)
-      count += 1
-      puts "#{count} repos enqueued" if count % 100 == 0
+    redis.pipelined do
+      Repository.in_batches do |batch|
+        batch.each do |repo|
+          redis.rpush 'repositories', repo.url
+          count += 1
+        end
+        puts "#{count} repos enqueued"
+      end
     end
+    # Repository.all.each do |repo|
+    #   redis.rpush('repositories', repo.id)
+    #   count += 1
+    # end
   end
 
   private
@@ -26,8 +34,8 @@ class ScraperDispatcher
   end
 
   def self.next_repo_id
-    next_id = redis.lpop('repositories')
-    redis.rpush('repositories', next_id)
+    next_url = redis.lpop('repositories')
+    redis.rpush('repositories', next_url)
     next_id
   end
 end
