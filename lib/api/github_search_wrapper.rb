@@ -24,19 +24,20 @@ class GithubSearchWrapper
     private
 
     def handle_request
-      @first_repo_stars_of_first_pagination = JSON.parse(@resp.body)['items'].first['stargazers_count'] if first_pagination?
+      @parsed_repos = JSON.parse(resp.body['items'])
+      @first_repo_stars_of_first_pagination = @parsed_repos.first['stargazers_count'] if first_pagination?
+
+      parse_repos
 
       if repeat_pagination?
         puts "Aborting due to repeating loop"
         abort
       elsif last_pagination?
-        last_stars = JSON.parse(@resp.body).last['stargazers_count']
+        last_stars = @parsed_repos.last['stargazers_count']
         @current_url = @BASE_URL + query("stars:<=#{last_stars}")
       else
         @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
       end
-
-      parse_repos
     end
 
     def query(param)
@@ -56,11 +57,11 @@ class GithubSearchWrapper
     end
 
     def first_and_last_repo_star_count_equal?
-      JSON.parse(@resp.body)['items'].last['stargazers_count'] == @first_repo_stars_of_first_pagination
+      @parsed_repos.last['stargazers_count'] == @first_repo_stars_of_first_pagination
     end
 
     def parse_repos
-      JSON.parse(@resp.body)['items'].each do |repo_hash|
+      @parsed_repos.each do |repo_hash|
         upsert_lib(repo_hash)
       end
     end
