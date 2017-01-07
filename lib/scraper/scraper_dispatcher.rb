@@ -9,7 +9,7 @@ class ScraperDispatcher
 
   def self.redis_requeue
     redis.flushall
-    # TODO: inefficient!
+
     count = 0
     Repository.all.each do |repo|
       redis.rpush('repositories', repo.id)
