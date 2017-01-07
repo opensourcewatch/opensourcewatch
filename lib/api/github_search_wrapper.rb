@@ -13,11 +13,12 @@ class GithubSearchWrapper
 
           rate_requests_remain? ? handle_request : break
         end
-        puts "Out of requests... Sleeping"
-        puts "Beginning at #{time_to_reset}"
+        wait_time = time_to_reset - Time.now
 
-        wait = Time.at(time_to_reset) - Time.now
-        sleep wait unless wait.negative?
+        puts "Out of requests... Sleeping ~#{wait_time} s"
+        puts "Beginning at ~#{time_to_reset}"
+
+        sleep wait_time unless wait_time.negative?
       end
     end
 
@@ -91,7 +92,7 @@ class GithubSearchWrapper
     end
 
     def time_to_reset
-      @resp.headers['x-ratelimit-reset'].to_i
+      Time.at(@resp.headers['x-ratelimit-reset'].to_i)
     end
   end
 end
