@@ -4,6 +4,7 @@ class Commit < ActiveRecord::Base
   belongs_to :user
   belongs_to :repository
 
+  # NOTE: if data gets big enough we may want to paritition commits into multiple commits by day tables
   def self.to_csv
     CSV.generate do |csv|
       csv << column_names
