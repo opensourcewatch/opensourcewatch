@@ -13,10 +13,19 @@ class GithubSearchWrapper
 
           rate_requests_remain? ? handle_request : break
         end
-        wait_time = Time.at(time_to_reset) - Time.now
+
+        wait_time = Time.at(seconds_to_reset) - Time.now
+
+        if abuse_error?
+          puts "Sleeping due to abuse error"
+          sleep @resp.headers['retry-after'].to_i
+          next
+        end
+
+        puts "Time until reset: #{Time.at(seconds_to_reset)}"
+        puts "Current time: #{Time.now.to_s}"
 
         puts "Out of requests... Sleeping ~#{wait_time} s"
-        puts "Beginning at ~#{Time.at(time_to_reset)}" 
 
         sleep wait_time unless wait_time.negative?
       end
@@ -91,8 +100,12 @@ class GithubSearchWrapper
       @resp.headers['x-ratelimit-remaining'].to_i
     end
 
-    def time_to_reset
+    def seconds_to_reset
       @resp.headers['x-ratelimit-reset'].to_i
+    end
+
+    def abuse_error?
+      seconds_to_reset == 0
     end
   end
 end
