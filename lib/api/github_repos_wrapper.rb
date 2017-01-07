@@ -2,6 +2,8 @@ class GithubReposWrapper
   @BASE_URL = 'https://api.github.com/repositories'
   @access_token = ENV["GITHUB_API_KEY"]
   @stop_id = nil
+  @repos = []
+  @BATCH_INSERT_SIZE = 10 # Each batch has 100 records (from githubs api), this says combine X batches per insert
 
   class << self
     # stop_id: compares the stop_id with next_id and doesn't make anymore
@@ -29,21 +31,13 @@ class GithubReposWrapper
 
     private
 
-    def create_repos
-      puts "Creating 1000 Repositories."
-      time_to_execute do
-        Repository.import(@repos)
-      end
-    end
-
-    def query(id)
-      @query = "?since=#{id}"
-    end
-
     def handle_request
         # TODO: We can speed this up by saving more records, say 1000 in memory before importing to the database
-        parse_repos
-        create_repos
+        repos_batch = parse_repos
+        @repos << repos_batch
+
+        create_repos if @repos.length >= @BATCH_INSERT_SIZE
+
         next_url =  @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
         next_id = next_url.split('=').last.to_i
         if @stop_id && @stop_id < next_id
@@ -54,7 +48,7 @@ class GithubReposWrapper
     end
 
     def parse_repos
-      @repos = JSON.parse(@resp.body).map do |repo|
+      return  JSON.parse(@resp.body).map do |repo|
         Repository.new({
           github_id: repo['id'],
           name: repo['name'],
@@ -64,6 +58,20 @@ class GithubReposWrapper
           forks: repo['forks']
         })
       end
+    end
+
+    def create_repos
+      @repos.flatten!
+      puts "Creating Repositories."
+      time_to_execute do
+        Repository.import(@repos)
+      end
+      puts "Clearing in memory repos"
+      @repos = []
+    end
+
+    def query(id)
+      @query = "?since=#{id}"
     end
 
     def search_request
