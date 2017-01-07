@@ -1,10 +1,12 @@
 class GithubSearchWrapper
   @BASE_URL = 'https://api.github.com/search/repositories'
   @access_token = ENV["GITHUB_API_KEY"]
+  @repos_processed = 0
 
   class << self
     def paginate_repos(query_param = 'stars:>1')
       # Set initial kickoff url to paginate from
+      @start_time = Time.now
       @current_url = @BASE_URL + query(query_param)
       loop do
         loop do
@@ -37,7 +39,7 @@ class GithubSearchWrapper
       @parsed_repos = JSON.parse(@resp.body)['items']
       @first_repo_stars_of_first_pagination = @parsed_repos.first['stargazers_count'] if first_pagination?
 
-      upsert_repos
+      process_repos
 
       if repeat_pagination?
         puts "Aborting due to repeating loop"
@@ -70,19 +72,24 @@ class GithubSearchWrapper
       @parsed_repos.last['stargazers_count'] == @first_repo_stars_of_first_pagination
     end
 
-    def upsert_repos
-      @parsed_repos.each do |repo|
-        puts "Upserting Repository."
-        Repository.find_or_create_by(github_id: repo['id']) do |repository|
-          repository.name = repo['name']
-          repository.github_id = repo['id']
-          repository.url = repo['html_url']
-          repository.language = repo['language']
-          repository.stars = repo['stargazers_count']
-          repository.forks = repo['forks']
-        end
-        puts "Repository Upserted"
+    def process_repos
+      puts "Processing 30 Repositories."
+      repos = @parsed_repos.map do |repo|
+        Repository.new({
+          name: repo['name'],
+          github_id: repo['id'],
+          url: repo['html_url'],
+          language: repo['language'],
+          stars:  repo['stargazers_count'],
+          forks:  repo['forks']
+        })
       end
+      Repository.import(repos)
+      puts "#{@repos_processed += 30} Repositories Processed in #{minutes_running} minutes."
+    end
+
+    def minutes_running
+      ((Time.now - @start_time) / 60).round(2)
     end
 
     def search_request
