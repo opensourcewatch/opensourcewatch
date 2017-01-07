@@ -39,7 +39,7 @@ class GithubSearchWrapper
       @parsed_repos = JSON.parse(@resp.body)['items']
       @first_repo_stars_of_first_pagination = @parsed_repos.first['stargazers_count'] if first_pagination?
 
-      upsert_repos
+      process_repos
 
       if repeat_pagination?
         puts "Aborting due to repeating loop"
@@ -72,8 +72,8 @@ class GithubSearchWrapper
       @parsed_repos.last['stargazers_count'] == @first_repo_stars_of_first_pagination
     end
 
-    def upsert_repos
-      puts "Upserting 30 Repositories."
+    def process_repos
+      puts "Processing 30 Repositories."
       repos = @parsed_repos.map do |repo|
         Repository.new({
           name: repo['name'],
@@ -85,7 +85,7 @@ class GithubSearchWrapper
         })
       end
       Repository.import(repos)
-      puts "#{@repos_processed += 30} Repositories Upserted in #{minutes_running} minutes."
+      puts "#{@repos_processed += 30} Repositories Processed in #{minutes_running} minutes."
     end
 
     def minutes_running
