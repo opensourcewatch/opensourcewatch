@@ -35,6 +35,7 @@ end
 # Get commit info from each repo using the redis queue
 namespace :dispatch do
   require_relative '../scraper/scraper_dispatcher'
+  require_relative '../scraper/github_repo_scraper'
 
   task :jobs => :environment do |t|
     babysitter(t) do
