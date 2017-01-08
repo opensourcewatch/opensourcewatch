@@ -8,23 +8,20 @@ class ScraperDispatcher
   end
 
   def self.redis_requeue
-    redis.flushall
+    redis.del 'repositories'
 
-    # TODO: complete this...
+    start_time = Time.now
     count = 0
     redis.pipelined do
-      Repository.in_batches do |batch|
+      Repository.where('stars > 10').in_batches do |batch|
         batch.each do |repo|
           redis.rpush 'repositories', repo.url
-          count += 1
         end
+        count += 1000
         puts "#{count} repos enqueued"
       end
     end
-    # Repository.all.each do |repo|
-    #   redis.rpush('repositories', repo.id)
-    #   count += 1
-    # end
+    puts "#{redis.llen 'repositories'} were enqueued in #{((Time.now - start_time) / 60).round(2)} mins"
   end
 
   private
