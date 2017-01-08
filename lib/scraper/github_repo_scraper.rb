@@ -17,23 +17,22 @@ class GithubRepoScraper
     def update_repo_data(repos = Repository.all)
       repos.each do |repo|
         begin
-          @current_repo = repo
-          break unless @github_doc.new_doc(@current_repo.url)
-          puts "Updated repo #{@current_repo.name}"
+          break unless get_repo_doc(repo)
 
           # TODO: add to update_repo_data to get repo name and owner name
           # owner, repo_name = @current_repo.url[/\/\w+\/\w+/].split('/)
 
-          # Parse the page and update repo, very similar to the optional update
-          # on the commits path, but on the commits path we don't have access
-          # to issues
           update_repo_meta(get_readme = true)
+          puts "Updated repo #{@current_repo.name}"
+
         rescue OpenURI::HTTPError => e
           repo.destroy
           puts "DESTROYED #{@current_repo.name} : its Github URL #{@current_repo.url} resulted in #{e.message}"
         end
       end
     end
+
+
 
     # Retrieves the commits for each Repository
     #
@@ -49,9 +48,7 @@ class GithubRepoScraper
 
       catch :scrape_limit_reached do
         @repositories.each do |repo|
-          @current_repo = repo
-          commits_path = @current_repo.url + '/commits/master'
-          break unless @github_doc.new_doc(commits_path)
+          break unless get_repo_doc(repo, "/commits/master")
 
           update_repo_meta if get_repo_meta
 
@@ -65,11 +62,17 @@ class GithubRepoScraper
 
     private
 
+    def get_repo_doc(repo, path="")
+      @current_repo = repo
+      doc_path = @current_repo.url + path
+      return @github_doc.new_doc(doc_path)
+    end
+
     def update_repo_meta(get_readme = false)
       get_readme ? readme = repo_readme_content : readme = nil
       # Grab general meta data that is available on the commits page
       # if told to do so
-      repo.update(
+      @current_repo.update(
         watchers: repo_watchers,
         stars: repo_stars,
         forks: repo_forks,
