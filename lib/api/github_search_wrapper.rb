@@ -102,6 +102,7 @@ class GithubSearchWrapper
     end
 
     def process_repos
+      # TODO: Change this to upsert data
       puts "Processing #{@parsed_repos.count} Repositories."
       repos = @parsed_repos.map do |repo|
         Repository.new({

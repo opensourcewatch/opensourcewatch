@@ -1,3 +1,5 @@
+# TODO: There eventually needs to be a callback here to add a Repository to the
+#       Redis queue on creation
 class Repository < ActiveRecord::Base
   validates :github_id, uniqueness: true
 
