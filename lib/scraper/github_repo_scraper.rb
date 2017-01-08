@@ -14,8 +14,6 @@ class GithubRepoScraper
     # Example project's Github url vs raw url
     # - Github: https://github.com/rspec/rspec/blob/master/README.md
     # - Raw: https://raw.githubusercontent.com/rspec/rspec/master/README.md
-    #
-    # repos: repos whose repo data will be updated
     def update_repo_data(repos = Repository.all)
       repos.each do |repo|
         begin
@@ -26,8 +24,10 @@ class GithubRepoScraper
           # TODO: add to update_repo_data to get repo name and owner name
           # owner, repo_name = @current_repo.url[/\/\w+\/\w+/].split('/)
 
-          # Parse the page and update repo
-          repo.update(stars: repo_stars, watchers: repo_watchers, forks: repo_forks, description: repo_description)
+          # Parse the page and update repo, very similar to the optional update
+          # on the commits path, but on the commits path we don't have access
+          # to issues
+          update_repo_meta(get_readme = true)
         rescue OpenURI::HTTPError => e
           repo.destroy
           puts "DESTROYED #{@current_repo.name} : its Github URL #{@current_repo.url} resulted in #{e.message}"
@@ -53,14 +53,7 @@ class GithubRepoScraper
           commits_path = @current_repo.url + '/commits/master'
           break unless @github_doc.new_doc(commits_path)
 
-          # Grab general meta data that is available on the commits page
-          # if told to do so
-          repo.update(
-            watchers: repo_watchers,
-            stars: repo_stars,
-            forks: repo_forks,
-            open_issues: repo_open_issues
-            ) if get_repo_meta
+          update_repo_meta if get_repo_meta
 
           puts "Scraping #{repo.name} commits"
           catch :recent_commits_finished do
@@ -71,6 +64,20 @@ class GithubRepoScraper
     end
 
     private
+
+    def update_repo_meta(get_readme = false)
+      get_readme ? readme = repo_readme_content : readme = nil
+      # Grab general meta data that is available on the commits page
+      # if told to do so
+      repo.update(
+        watchers: repo_watchers,
+        stars: repo_stars,
+        forks: repo_forks,
+        open_issues: repo_open_issues
+        readme_content: readme_content
+        ) if get_repo_meta
+    end
+
     # this can be added to the other scraper
     def handle_scrape_limits(opts={})
       @repositories = opts[:repositories] || Repository.all
