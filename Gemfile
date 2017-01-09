@@ -19,6 +19,9 @@ gem 'puma', '~> 3.0' # App server
 gem "pg" # Use PostGreSQL
 gem 'redis'
 
+# JS Runtime
+gem 'therubyracer'
+
 # Better search
 gem 'elasticsearch-model'
 gem 'elasticsearch-rails'
