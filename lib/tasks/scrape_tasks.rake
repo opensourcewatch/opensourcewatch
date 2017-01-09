@@ -53,7 +53,7 @@ namespace :dispatch do
     end
   end
 
-  task :enqueue => :environment do
+  task :redis_requeue => :environment do
     ScraperDispatcher.redis_requeue
   end
 end
