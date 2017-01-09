@@ -104,7 +104,7 @@ class GithubSearchWrapper
     end
 
     def next_pagination?
-      @resp.headers['link'] && @resp.headers['link'].include('rel="next"')
+      @resp.headers['link'] && @resp.headers['link'].include?('rel="next"')
     end
 
     def repeat_pagination?
