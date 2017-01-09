@@ -7,6 +7,8 @@ class GithubRepoScraper
   SECONDS_BETWEEN_REQUESTS = 0
   @BASE_URL = "https://github.com"
 
+  # TODO: add check so that these methods don't necessarily take and active record
+  # model, because we don't want to hit the db everytime in the dispatcher
   class << self
     # Gets the following:
     # - number of stars the project has
@@ -139,7 +141,7 @@ class GithubRepoScraper
 
       issue_number, open_date, creator = raw_issue.css("span.opened-by").text.strip.split("\n")
 
-      issue['issue_number'] = issue_number[1..-1].to_i      
+      issue['issue_number'] = issue_number[1..-1].to_i
       issue['creator'] = creator.strip
       issue['open_date'] = open_date.split(" ")[1..-2].join(" ")
 
