@@ -95,7 +95,7 @@ class GithubRepoScraper
 
       catch :scrape_limit_reached do
         @repositories.each do |repo|
-          break unless get_repo_doc(repo, "/commits/master")
+          break unless get_repo_doc(repo, "/commits")
 
           update_repo_meta if get_repo_meta
 
