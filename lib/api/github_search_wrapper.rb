@@ -6,6 +6,7 @@ class GithubSearchWrapper
   class << self
     def paginate_repos(skip_to_star = nil)
       # Set initial kickoff url to paginate from
+      skip_to_star = 657
       @start_time = Time.now
       if skip_to_star
         @star_count = skip_to_star
@@ -75,25 +76,26 @@ class GithubSearchWrapper
         @current_url = @BASE_URL + "?q=stars:#{@star_count -= 1}"
         return
       end
-      @first_repo_stars_of_first_pagination = @parsed_repos.first['stargazers_count'] if first_pagination?
+
+      binding.pry
+      if first_pagination?
+        @first_repo_of_last_pagination = @first_repo_of_curr_pagination
+        @first_repo_of_curr_pagination = @parsed_repos.first['stargazers_count']
+      end
 
       puts "Request: #{@current_url}"
 
       process_repos
 
-      if repeat_pagination?
-        puts "Aborting due to repeating loop"
-        abort
+      if next_pagination?
+        @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
       elsif last_pagination?
         @current_url = @BASE_URL + "?q=stars:#{@star_count -= 1}"
-      else
-        @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
+      elsif repeat_pagination?
+        puts "Aborting due to repeating loop"
+        abort
       end
     end
-
-    #def first_round_of_pagination?
-    #  @star_count.nil?
-    #end
 
     def no_repos_for_star_count?
       binding.pry if @parsed_repos.nil?
@@ -104,16 +106,20 @@ class GithubSearchWrapper
       @resp.headers['link'] && !@resp.headers['link'].include?('rel="first"')
     end
 
+    def next_pagination?
+      @resp.headers['link'] && @resp.headers['link'].include('rel="next"')
+    end
+
     def repeat_pagination?
-      last_pagination? && first_and_last_repo_star_count_equal?
+      last_pagination? && first_repo_of_curr_and_last_pagination_equal?
     end
 
     def last_pagination?
       @resp.headers['link'] && !@resp.headers['link'].include?('rel="last"') || !@resp.headers['link']
     end
 
-    def first_and_last_repo_star_count_equal?
-      @parsed_repos.last['stargazers_count'] == @first_repo_stars_of_first_pagination
+    def first_repo_of_curr_and_last_pagination_equal?
+      @first_repo_of_curr_pagination == @first_repo_of_last_pagination
     end
 
     def process_repos
