@@ -4,7 +4,7 @@ require_relative './noko_doc'
 class GithubRepoScraper
   @github_doc = NokoDoc.new
   @current_repo = nil
-  @SECONDS_BETWEEN_REQUESTS = 0
+  SECONDS_BETWEEN_REQUESTS = 0
   @BASE_URL = "https://github.com"
 
   class << self
