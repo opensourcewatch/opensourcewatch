@@ -4,12 +4,11 @@ class GithubSearchWrapper
   @repos_processed = 0
 
   class << self
-    def paginate_repos(skip_to_star = nil)
+    def paginate_repos(skip_to_star: nil)
       # Set initial kickoff url to paginate from
-      skip_to_star = 657
       @start_time = Time.now
       if skip_to_star
-        @star_count = skip_to_star
+        @star_count = skip_to_star.to_i
         @current_url = @BASE_URL + "?q=stars:#{@star_count}"
         @first_round_of_pagination = false
       else
@@ -62,7 +61,6 @@ class GithubSearchWrapper
 
       if last_pagination?
         @star_count = @parsed_repos.last['stargazers_count'].to_i
-        @star_count = 2200 # for testing
         @current_url = @BASE_URL + "?q=stars:#{@star_count}"
         @first_round_of_pagination = false
       else
@@ -77,7 +75,6 @@ class GithubSearchWrapper
         return
       end
 
-      binding.pry
       if first_pagination?
         @first_repo_of_last_pagination = @first_repo_of_curr_pagination
         @first_repo_of_curr_pagination = @parsed_repos.first['stargazers_count']
