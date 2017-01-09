@@ -5,6 +5,7 @@ class GithubRepoScraper
   @github_doc = NokoDoc.new
   @current_repo = nil
   @SECONDS_BETWEEN_REQUESTS = 0
+  @BASE_URL = "https://github.com"
 
   class << self
     # Gets the following:
@@ -41,20 +42,30 @@ class GithubRepoScraper
 
         update_repo_meta if get_repo_meta
 
-        # TODO: Paginate through issues and create all issues
-
-        # Get all the issues from page
-        raw_issues = @github_doc.doc.css("div.issues-listing ul li div.d-table")
-
+        puts "Scraping issues for #{repo.name}"
         issues = [] # cache issues so we can cycle through without hitting the db
-        raw_issues.each do |raw_issue|
-          issue = Issue.create( build_issue(raw_issue) )
-          issues << issue
+        loop do
+          # Get all the issues from page
+          raw_issues = @github_doc.doc.css("div.issues-listing ul li div.d-table")
+
+          raw_issues.each do |raw_issue|
+            puts "Creating Issue"
+            issue = Issue.create( build_issue(raw_issue) )
+            issues << issue
+          end
+
+          next_url_anchor = @github_doc.doc.css("a.next_page")
+          if next_url_anchor.present?
+            next_url_rel_path = next_url_anchor.attribute("href").value
+            @github_doc.new_doc(@BASE_URL + next_url_rel_path)
+          else
+            break
+          end
         end
 
         # Get all the comments for each issue
         issues.each do |issue|
-          doc_path = "https://github.com" + issue.url
+          doc_path = @BASE_URL + issue.url
           @github_doc.new_doc(doc_path)
 
           raw_comments = @github_doc.doc.css("div.timeline-comment-wrapper")
@@ -62,6 +73,8 @@ class GithubRepoScraper
           raw_comments.each do |raw_comment|
             comment_json = build_comment(raw_comment)
             comment_json['issue_id'] = issue.id
+
+            puts "Creating Issue Comment"
             IssueComment.create(comment_json)
           end
         end
@@ -105,9 +118,9 @@ class GithubRepoScraper
       user_name = raw_comment.css("a.author").text
       user = User.find_by(github_username: user_name)
       unless user
+        puts "Creating new user: #{user_name}"
         user = User.create(github_username: user_name)
       end
-      binding.pry
 
       comment_json = {}
       comment_json['user_id'] = user.id
@@ -126,7 +139,7 @@ class GithubRepoScraper
 
       issue_number, open_date, creator = raw_issue.css("span.opened-by").text.strip.split("\n")
 
-      issue['issue_number'] = issue_number[1..-1].to_i
+      issue['issue_number'] = issue_number[1..-1].to_i      
       issue['creator'] = creator.strip
       issue['open_date'] = open_date.split(" ")[1..-2].join(" ")
 
@@ -172,7 +185,7 @@ class GithubRepoScraper
 
         sleep SECONDS_BETWEEN_REQUESTS
 
-        break unless @github_doc.new_doc('https://github.com' + next_path)
+        break unless @github_doc.new_doc(@BASE_URL + next_path)
       end
     end
 
