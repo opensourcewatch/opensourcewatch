@@ -2,6 +2,8 @@ class GithubSearchWrapper
   @BASE_URL = 'https://api.github.com/search/repositories'
   @access_token = ENV["GITHUB_API_KEY"]
   @repos_processed = 0
+  # Github will only return 34 * 30 results
+  REPOS_PROCESSED_PAGINATION_MAX = 1020
 
   class << self
     def paginate_repos(skip_to_star: nil)
@@ -76,26 +78,25 @@ class GithubSearchWrapper
       end
 
       if first_pagination?
-        @first_repo_of_last_pagination = @first_repo_of_curr_pagination
-        @first_repo_of_curr_pagination = @parsed_repos.first['stargazers_count']
+        @repos_processed_for_curr_pagination = 0
       end
 
       puts "Request: #{@current_url}"
 
       process_repos
 
+      @repos_processed_for_curr_pagination += @parsed_repos.count
       if next_pagination?
         @current_url = @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
-      elsif last_pagination?
-        @current_url = @BASE_URL + "?q=stars:#{@star_count -= 1}"
       elsif repeat_pagination?
         puts "Aborting due to repeating loop"
         abort
+      elsif last_pagination?
+        @current_url = @BASE_URL + "?q=stars:#{@star_count -= 1}"
       end
     end
 
     def no_repos_for_star_count?
-      binding.pry if @parsed_repos.nil?
       @parsed_repos && @parsed_repos.empty?
     end
 
@@ -108,15 +109,11 @@ class GithubSearchWrapper
     end
 
     def repeat_pagination?
-      last_pagination? && first_repo_of_curr_and_last_pagination_equal?
+      last_pagination? && @repos_processed_for_curr_pagination >= REPOS_PROCESSED_PAGINATION_MAX
     end
 
     def last_pagination?
       @resp.headers['link'] && !@resp.headers['link'].include?('rel="last"') || !@resp.headers['link']
-    end
-
-    def first_repo_of_curr_and_last_pagination_equal?
-      @first_repo_of_curr_pagination == @first_repo_of_last_pagination
     end
 
     def process_repos
