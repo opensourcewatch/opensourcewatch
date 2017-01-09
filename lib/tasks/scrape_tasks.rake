@@ -47,13 +47,15 @@ namespace :dispatch do
   require_relative '../scraper/scraper_dispatcher'
   require_relative '../scraper/github_repo_scraper'
 
-  task :jobs => :environment do |t|
+  task :repo_activity => :environment do |t|
     babysitter(t) do
-      ScraperDispatcher.scrape_commits
+      puts "Dispatching commits and issues scraping pathway..."
+      ScraperDispatcher.repo_activity
     end
   end
 
   task :enqueue => :environment do
+    puts "Enqueuing redis..."
     ScraperDispatcher.redis_requeue
   end
 end

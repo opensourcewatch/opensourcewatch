@@ -1,17 +1,33 @@
 class ScraperDispatcher
-  def self.scrape_commits
-    # TODO: refactor this to scrape in batches
+  @current_repo = nil
+
+  def self.repo_activity
+    # TODO: refactor this to batch jobs
     @start_time = Time.now
     @scrape_count = 0
     queue_length = redis.llen('repositories').to_i
+
     loop do
       repo_url = next_repo_url
+
+      @current_repo = Repository.where("url='#{repo_url}'").first
+
       puts "Scraping: #{repo_url}"
-      GithubRepoScraper.commits(repositories: [ Repository.where("url='#{repo_url}'").first ])
-      @scrape_count += 1
+      scrape_commits
+      scrape_issues
       puts "Scraped #{@scrape_count} in #{((Time.now - @start_time) / 60).round(2)} mins"
+
+      @scrape_count += 1
       break if @scrape_count >= queue_length
     end
+  end
+
+  def self.scrape_commits
+    GithubRepoScraper.commits(repositories: [@current_repo])
+  end
+
+  def self.scrape_issues
+    GithubRepoScraper.issues(repositories: [@current_repo])
   end
 
   def self.redis_requeue
