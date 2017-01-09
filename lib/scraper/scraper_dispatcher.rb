@@ -1,30 +1,27 @@
 class ScraperDispatcher
   def self.scrape_commits
-    # TODO: refactor this to open a remote redis connection
+    # TODO: refactor this to scrape in batches
     loop do
-      repo_id = next_repo_id
-      GithubScraper.lib_commits(libraries: [ Repository.find(repo_id) ])
+      repo_url = next_repo_url
+      GithubRepoScraper.commits(libraries: [ Repository.where("url='#{repo_url}'") ])
     end
   end
 
   def self.redis_requeue
-    redis.flushall
+    redis.del 'repositories'
 
-    # TODO: complete this...
+    start_time = Time.now
     count = 0
     redis.pipelined do
-      Repository.in_batches do |batch|
+      Repository.where('stars > 10').in_batches do |batch|
         batch.each do |repo|
           redis.rpush 'repositories', repo.url
-          count += 1
         end
+        count += 1000
         puts "#{count} repos enqueued"
       end
     end
-    # Repository.all.each do |repo|
-    #   redis.rpush('repositories', repo.id)
-    #   count += 1
-    # end
+    puts "#{redis.llen 'repositories'} were enqueued in #{((Time.now - start_time) / 60).round(2)} mins"
   end
 
   private
@@ -34,9 +31,9 @@ class ScraperDispatcher
     @redis ||= Redis.new(host: ip)
   end
 
-  def self.next_repo_id
+  def self.next_repo_url
     next_url = redis.lpop('repositories')
     redis.rpush('repositories', next_url)
-    next_id
+    next_url
   end
 end
