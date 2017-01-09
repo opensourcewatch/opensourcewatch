@@ -19,7 +19,7 @@ class Repository < ActiveRecord::Base
   def activity_score
     # TODO: We should only get the commits for a given time period, when calculating
     # this, not all the commits on a repository
-    commits.count + open_issues.to_i
+    commits.count + issues.issues_comments.count + open_issues
   end
 
   def significance_score
