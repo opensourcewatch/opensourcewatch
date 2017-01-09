@@ -46,17 +46,25 @@ class GithubRepoScraper
         # Get all the issues from page
         raw_issues = @github_doc.doc.css("div.issues-listing ul li div.d-table")
 
-        # Keep track of issues so can visit to get comments for each issue without
-        # hitting the db
-        issues = []
+        issues = [] # cache issues so we can cycle through without hitting the db
         raw_issues.each do |raw_issue|
           issue = Issue.create( build_issue(raw_issue) )
           issues << issue
         end
 
-        
+        # Get all the comments for each issue
+        issues.each do |issue|
+          doc_path = "https://github.com" + issue.url
+          @github_doc.new_doc(doc_path)
 
-        # TODO: create and associate comment siwth users
+          raw_comments = @github_doc.doc.css("div.timeline-comment-wrapper")
+
+          raw_comments.each do |raw_comment|
+            comment_json = build_comment(raw_comment)
+            comment_json['issue_id'] = issue.id
+            IssueComment.create(comment_json)
+          end
+        end
       end
     end
 
@@ -95,15 +103,17 @@ class GithubRepoScraper
     # Basically let's make that query when we get the repo.
     def build_comment(raw_comment)
       user_name = raw_comment.css("a.author").text
-      user = User.find_by(name: user_name)
+      user = User.find_by(github_username: user_name)
       unless user
-        user = user.create(github_username: user_name)
+        user = User.create(github_username: user_name)
       end
+      binding.pry
 
       comment_json = {}
       comment_json['user_id'] = user.id
       comment_json['github_created_at'] = raw_comment.css("a relative-time").attribute("datetime").value
       comment_json['body'] = raw_comment.css("td.comment-body").text
+      comment_json
     end
 
     def build_issue(raw_issue)

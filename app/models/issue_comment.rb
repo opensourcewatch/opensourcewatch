@@ -1,3 +1,3 @@
-class IssueComment < Application::Base
+class IssueComment < ActiveRecord::Base
   belongs_to :issue
 end
