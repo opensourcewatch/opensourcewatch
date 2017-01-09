@@ -32,7 +32,33 @@ class GithubRepoScraper
       end
     end
 
+    # Retrieves the open issues and comments for each repository
+    def issues(scrape_limit_opts={}, get_repo_meta=false)
+      handle_scrape_limits(scrape_limit_opts)
 
+      @repositories.each do |repo|
+        break unless get_repo_doc(repo, "/issues")
+
+        update_repo_meta if get_repo_meta
+
+        # TODO: Paginate through issues and create all issues
+
+        # Get all the issues from page
+        raw_issues = @github_doc.doc.css("div.issues-listing ul li div.d-table")
+
+        # Keep track of issues so can visit to get comments for each issue without
+        # hitting the db
+        issues = []
+        raw_issues.each do |raw_issue|
+          issue = Issue.create( build_issue(raw_issue) )
+          issues << issue
+        end
+
+        
+
+        # TODO: create and associate comment siwth users
+      end
+    end
 
     # Retrieves the commits for each Repository
     #
@@ -62,6 +88,41 @@ class GithubRepoScraper
 
     private
 
+    # TODO: we should cache all the users for a repo when a repo is requested, so
+    # we don't have to hit the DB as often, because I'll have to get the name
+    # of the user from the comment, search if it exist, then create it.
+    # If we had them cached I could search those, if not found, create it.
+    # Basically let's make that query when we get the repo.
+    def build_comment(raw_comment)
+      user_name = raw_comment.css("a.author").text
+      user = User.find_by(name: user_name)
+      unless user
+        user = user.create(github_username: user_name)
+      end
+
+      comment_json = {}
+      comment_json['user_id'] = user.id
+      comment_json['github_created_at'] = raw_comment.css("a relative-time").attribute("datetime").value
+      comment_json['body'] = raw_comment.css("td.comment-body").text
+    end
+
+    def build_issue(raw_issue)
+      issue = {}
+      issue['repository_id'] = @current_repo.id
+
+      issue['name'] = raw_issue.css("a.h4").text.strip
+      issue['creator'] = raw_issue.css("a.h4")
+      issue['url'] = raw_issue.css("a.h4").attribute("href").value
+
+      issue_number, open_date, creator = raw_issue.css("span.opened-by").text.strip.split("\n")
+
+      issue['issue_number'] = issue_number[1..-1].to_i
+      issue['creator'] = creator.strip
+      issue['open_date'] = open_date.split(" ")[1..-2].join(" ")
+
+      issue
+    end
+
     def get_repo_doc(repo, path="")
       @current_repo = repo
       doc_path = @current_repo.url + path
@@ -76,7 +137,7 @@ class GithubRepoScraper
         watchers: repo_watchers,
         stars: repo_stars,
         forks: repo_forks,
-        open_issues: repo_open_issues
+        open_issues: repo_open_issues,
         readme_content: readme_content
         ) if get_repo_meta
     end

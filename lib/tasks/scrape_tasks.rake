@@ -29,7 +29,17 @@ namespace :github do
     end
   end
 
-  task :all => [:repos, :commits, :users]
+  task :issues, [:infinite, :fetch_meta]  => :environment do |t, args|
+    if args.infinite == "true"
+      loop do
+        GithubRepoScraper.issues
+      end
+    else
+      GithubRepoScraper.issues({}, args.fetch_meta)
+    end
+  end
+
+  task :all => [:repos, :commits, :issues, :users]
 end
 
 # Get commit info from each repo using the redis queue
