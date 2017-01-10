@@ -40,8 +40,14 @@ class ScraperDispatcher
   private
 
   def self.redis
+    binding.pry
     ip = ENV['REDIS_SERVER_IP']
-    @redis ||= Redis.new(host: ip)
+    pw = ENV['REDIS_SERVER_PW']
+
+    @redis ||= Redis.new(
+      host: ip,
+      password: pw
+    )
   end
 
   def self.next_active_repo
@@ -77,7 +83,6 @@ class ScraperDispatcher
   def self.repo_significance
     start_time = Time.now
     scrape_count = 0
-    binding.pry
     queue_length = redis.llen(REDIS_BLANK_QUEUE_NAME).to_i
 
     loop do
