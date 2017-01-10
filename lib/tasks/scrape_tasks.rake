@@ -68,9 +68,9 @@ namespace :dispatch do
     end
   end
 
-  task :redis_requeue => :environment do
+  task :redis_requeue, [:queue_name, :query] => :environment do |t, args|
     puts "Enqueuing redis..."
-    ScraperDispatcher.redis_requeue
+    ScraperDispatcher.redis_requeue(args.to_h)
   end
 end
 
