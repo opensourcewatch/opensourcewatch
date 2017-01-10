@@ -1,4 +1,4 @@
-# MICHAEL's COMMENTS blahbablahbsribhaobihre
+# Not your comments anymore
 
 namespace :github do
   require_relative "../scraper/github_repo_scraper"
