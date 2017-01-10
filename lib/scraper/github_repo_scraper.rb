@@ -25,7 +25,7 @@ class GithubRepoScraper
           # TODO: add to update_repo_data to get repo name and owner name
           # owner, repo_name = @current_repo.url[/\/\w+\/\w+/].split('/)
 
-          update_repo_meta(get_readme = true)
+          update_repo_meta(false)
           puts "Updated repo #{@current_repo.name}"
 
         rescue OpenURI::HTTPError => e
@@ -155,7 +155,11 @@ class GithubRepoScraper
     end
 
     def update_repo_meta(get_readme = false)
-      get_readme ? readme = repo_readme_content : readme = nil
+      if get_readme
+        readme_content = repo_readme_content
+      else
+        readme_content = nil
+      end
       # Grab general meta data that is available on the commits page
       # if told to do so
       @current_repo.update(
@@ -164,7 +168,7 @@ class GithubRepoScraper
         forks: repo_forks,
         open_issues: repo_open_issues,
         readme_content: readme_content
-        ) if get_repo_meta
+        )
     end
 
     # this can be added to the other scraper
@@ -229,11 +233,11 @@ class GithubRepoScraper
     def repo_readme_content
       # NOTE: Only available on the code subpage of the repo
       if @github_doc.doc.at('td span:contains("README")')
-        raw_file_url = @current_repo.url.gsub('github', 'raw.githubusercontent') \
-                          + '/master/README.md'
+        raw_file_url = @current_repo.url.gsub('github', 'raw.githubusercontent' +
+                          '/master/README.md')
         NokoDoc.new_temp_doc(raw_file_url).css('body p').text
       else
-        "Empty"
+        nil
       end
     end
 
