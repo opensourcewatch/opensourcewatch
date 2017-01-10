@@ -1,4 +1,5 @@
-# Not your comments anymore
+# Still my comments
+# Lukas Nimmo
 
 namespace :github do
   require_relative "../scraper/github_repo_scraper"
