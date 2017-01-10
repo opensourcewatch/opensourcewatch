@@ -1,20 +1,19 @@
 class ScraperDispatcher
   @current_repo = nil
 
-  def self.repo_activity
+  def self.repo_activity(opts = {})
     # TODO: refactor this to batch jobs
     @start_time = Time.now
     @scrape_count = 0
     queue_length = redis.llen('repositories').to_i
 
     loop do
-      repo_url = next_repo_url
+      repo_data = JSON.parse(next_repo_data)
 
-      @current_repo = Repository.where("url='#{repo_url}'").first
+      @current_repo = Repository.find(repo_data['id'])
 
-      puts "Scraping: #{repo_url}"
-      scrape_commits
-      scrape_issues
+      puts "Scraping: #{repo_data['url']}"
+      yield if block_given?
       puts "Scraped #{@scrape_count} in #{((Time.now - @start_time) / 60).round(2)} mins"
 
       @scrape_count += 1
@@ -22,12 +21,16 @@ class ScraperDispatcher
     end
   end
 
+  def self.scrape_metadata
+    repo_activity { GithubRepoScraper.update_repo_data([@current_repo]) }
+  end
+
   def self.scrape_commits
-    GithubRepoScraper.commits(repositories: [@current_repo])
+    repo_activity { GithubRepoScraper.commits(repositories: [@current_repo]) }
   end
 
   def self.scrape_issues
-    GithubRepoScraper.issues(repositories: [@current_repo])
+    repo_activity { GithubRepoScraper.issues(repositories: [@current_repo]) }
   end
 
   def self.redis_requeue
@@ -41,7 +44,7 @@ class ScraperDispatcher
           redis.rpush 'repositories',{
             id: repo.id,
             url: repo.url
-          }
+          }.to_json
         end
         count += 1000
         puts "#{count} repos enqueued"
@@ -57,9 +60,9 @@ class ScraperDispatcher
     @redis ||= Redis.new(host: ip)
   end
 
-  def self.next_repo_url
-    next_url = redis.lpop('repositories')
-    redis.rpush('repositories', next_url)
-    next_url
+  def self.next_repo_data
+    next_data = redis.lpop('repositories')
+    redis.rpush('repositories', next_data)
+    next_data
   end
 end
