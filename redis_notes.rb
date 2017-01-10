@@ -1,3 +1,4 @@
+# some changes
 gem 'redis'
 
 require 'redis'
