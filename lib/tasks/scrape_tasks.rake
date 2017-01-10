@@ -1,6 +1,3 @@
-# Great comments
-# another great comments
-
 namespace :github do
   require_relative "../scraper/github_repo_scraper"
   require_relative "../scraper/github_user_scraper"
@@ -50,10 +47,24 @@ namespace :dispatch do
   require_relative '../scraper/scraper_dispatcher'
   require_relative '../scraper/github_repo_scraper'
 
-  task :repo_activity => :environment do |t|
+  task :repo_commits => :environment do |t|
     babysitter(t) do
       puts "Dispatching commits and issues scraping pathway..."
-      ScraperDispatcher.repo_activity
+      ScraperDispatcher.scrape_commits
+    end
+  end
+
+  task :repo_issues => :environment do |t|
+    babysitter(t) do
+      puts "Dispatching commits and issues scraping pathway..."
+      ScraperDispatcher.scrape_issues
+    end
+  end
+
+  task :repo_metadata => :environment do |t|
+    babysitter(t) do
+      puts "Dispatching repos and scraping metadata..."
+      ScraperDispatcher.scrape_metadata
     end
   end
 
