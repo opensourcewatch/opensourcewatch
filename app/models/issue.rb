@@ -3,5 +3,5 @@ class Issue < ActiveRecord::Base
 
   has_many :issue_comments
 
-  validates :issue_number, uniqueness: { scope: [self.repository.id] }
+  validates :issue_number, uniqueness: { scope: [:repository_id] }
 end
