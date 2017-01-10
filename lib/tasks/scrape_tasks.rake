@@ -54,7 +54,7 @@ namespace :dispatch do
     end
   end
 
-  task :enqueue => :environment do
+  task :redis_requeue => :environment do
     puts "Enqueuing redis..."
     ScraperDispatcher.redis_requeue
   end

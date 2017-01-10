@@ -38,7 +38,10 @@ class ScraperDispatcher
     redis.pipelined do
       Repository.where('stars > 10').in_batches do |batch|
         batch.each do |repo|
-          redis.rpush 'repositories', repo.url
+          redis.rpush 'repositories',{
+            id: repo.id,
+            url: repo.url
+          }
         end
         count += 1000
         puts "#{count} repos enqueued"
