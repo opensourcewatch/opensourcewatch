@@ -20,7 +20,7 @@ gem "pg" # Use PostGreSQL
 gem 'redis'
 gem 'figaro'
 gem 'activerecord-import'
-
+gem 'json'
 gem 'therubyracer'
 
 # Better search
