@@ -51,8 +51,9 @@ class GithubRepoScraper
           raw_issues = @github_doc.doc.css("div.issues-listing ul li div.d-table")
 
           raw_issues.each do |raw_issue|
-            puts "Creating Issue"
             issue = Issue.create( build_issue(raw_issue) )
+            puts "Creating Issue" if issue.id
+
             issues << issue
           end
 
@@ -74,10 +75,10 @@ class GithubRepoScraper
 
           raw_comments.each do |raw_comment|
             comment_json = build_comment(raw_comment)
-            comment_json['issue_id'] = issue.id
+            comment_json['issue_id'] = issue
 
-            puts "Creating Issue Comment"
-            IssueComment.create(comment_json)
+            issue_comment = IssueComment.create(comment_json)
+            puts "Creating Issue Comment" if issue_comment
           end
         end
       end
