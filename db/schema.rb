@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170109172652) do
+ActiveRecord::Schema.define(version: 20170111003533) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -22,6 +22,7 @@ ActiveRecord::Schema.define(version: 20170109172652) do
     t.datetime "updated_at",        null: false
     t.string   "github_identifier"
     t.integer  "repository_id"
+    t.datetime "github_created_at"
   end
 
   create_table "issue_comments", force: :cascade do |t|
@@ -34,12 +35,14 @@ ActiveRecord::Schema.define(version: 20170109172652) do
   end
 
   create_table "issues", force: :cascade do |t|
-    t.integer "repository_id"
-    t.string  "name"
-    t.string  "creator"
-    t.string  "url"
-    t.string  "open_date"
-    t.integer "issue_number"
+    t.integer  "repository_id"
+    t.string   "name"
+    t.string   "creator"
+    t.string   "url"
+    t.string   "open_date"
+    t.integer  "issue_number"
+    t.datetime "created_at"
+    t.datetime "updated_at"
   end
 
   create_table "repositories", force: :cascade do |t|
