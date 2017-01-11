@@ -6,6 +6,8 @@ class GithubRepoScraper
   @current_repo = nil
   SECONDS_BETWEEN_REQUESTS = 0
   @BASE_URL = "https://github.com"
+  @commits_created_this_session = 0
+  @start_time = Time.now
 
   # TODO: add check so that these methods don't necessarily take and active record
   # model, because we don't want to hit the db everytime in the dispatcher
@@ -225,7 +227,10 @@ class GithubRepoScraper
               github_identifier: github_identifier,
               github_created_at: github_created_at
               )
+            @commits_created_this_session += 1
             puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
+            puts "Commits cretaed this session: #{@commits_created_this_session}"
+            puts "Total time so far: #{((Time.now - @start_time) / 60).round(2)}"
           end
         end
 
