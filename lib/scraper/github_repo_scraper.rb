@@ -215,13 +215,15 @@ class GithubRepoScraper
         if user
           message = commit_info.css("a.message").text
           github_identifier = commit_info.css("a.sha").text.strip
+          github_created_at = DateTime.parse(commit_info.css("relative-time").first['datetime'])
 
           unless Commit.exists?(github_identifier: github_identifier)
             Commit.create(
               message: message,
               user: user,
               repository: @current_repo,
-              github_identifier: github_identifier
+              github_identifier: github_identifier,
+              github_created_at: github_created_at
               )
             puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
           end

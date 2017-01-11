@@ -40,7 +40,6 @@ class ScraperDispatcher
   private
 
   def self.redis
-    binding.pry
     ip = ENV['REDIS_SERVER_IP']
     pw = ENV['REDIS_SERVER_PW']
 
