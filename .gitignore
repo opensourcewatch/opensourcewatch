@@ -16,14 +16,14 @@ pickle-email-*.html
 # Ignore database.yml configuration for your machine
 config/database.yml
 
-# TODO Comment out this rule if you are OK with secrets being uploaded to the repo
+# Comment out this rule if you are OK with secrets being uploaded to the repo
 config/initializers/secret_token.rb
 
 # Only include if you have production secrets in this file, which is no longer a Rails default
 # config/secrets.yml
 
 # dotenv
-# TODO Comment out this rule if environment variables can be committed
+# Comment out this rule if environment variables can be committed
 .env
 
 ## Environment normalization:
@@ -43,3 +43,6 @@ bower.json
 
 # Ignore pow environment settings
 .powenv
+
+# Ignore application configuration
+/config/application.yml

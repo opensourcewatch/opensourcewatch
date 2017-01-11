@@ -1,75 +1,91 @@
-namespace :ruby_gems do
-  require_relative "../scraper/ruby_gems_scraper"
-
-  # Get all gems from ruby gems
-  # Can call for a single letter and x amount of gems:
-  #   ex. rake scrape:gems[F, 20]
-  task :gems, [:letters_to_traverse, :upsert_limit] => :environment do |t, args|
-    options = args.to_h
-    if args.letters_to_traverse
-      options[:letters_to_traverse] = args.letters_to_traverse.split(" ")
-    end
-
-    babysitter do
-      RubyGemsScraper.upsert_all_gems(options)
-    end
-  end
-
-  task :top_100 => :environment do |t|
-    babysitter do
-      RubyGemsScraper.upsert_top_100_gems
-    end
-  end
-end
-
 namespace :github do
-  require_relative "../scraper/github_scraper"
+  require_relative "../scraper/github_repo_scraper"
+  require_relative "../scraper/github_user_scraper"
 
-  # Get github repo information for each gem
-  task :gems => :environment do |t|
+  # Get github repo information for each repo
+  task :repos => :environment do |t|
     babysitter(t) do
-      GithubScraper.update_gem_data
+      GithubRepoScraper.update_repo_data
     end
+  end
+
+  task :users => :environment do |t|
+    GithubUserScraper.update_user_data
   end
 
   # Get commit info from each repo
-  task :commits, [:infinite] => :environment do |t, args|
-    options = args.to_h
+  # TODO: make args take in the 3 options for lib_commits
+  task :commits, [:infinite, :fetch_meta] => :environment do |t, args|
     if args.infinite == "true"
       babysitter(t) do
         loop do
-          GithubScraper.lib_commits
+          GithubRepoScraper.commits({}, args.fetch_meta)
         end
       end
     else
       babysitter(t) do
-        GithubScraper.lib_commits
+        GithubRepoScraper.commits({}, args.fetch_meta)
       end
     end
   end
 
-  task :all => [:gems, :commits]
+  task :issues, [:infinite, :fetch_meta]  => :environment do |t, args|
+    if args.infinite == "true"
+      loop do
+        GithubRepoScraper.issues
+      end
+    else
+      GithubRepoScraper.issues({}, args.fetch_meta)
+    end
+  end
+
+  task :all => [:repos, :commits, :issues, :users]
 end
 
 # Get commit info from each repo using the redis queue
 namespace :dispatch do
   require_relative '../scraper/scraper_dispatcher'
+  require_relative '../scraper/github_repo_scraper'
 
-  task :jobs => :environment do |t|
+  task :repo_commits => :environment do |t|
     babysitter(t) do
+      puts "Dispatching commits and issues scraping pathway..."
       ScraperDispatcher.scrape_commits
     end
   end
 
-  task :enqueue => :environment do
-    ScraperDispatcher.redis_requeue
+  task :repo_issues => :environment do |t|
+    babysitter(t) do
+      puts "Dispatching commits and issues scraping pathway..."
+      ScraperDispatcher.scrape_issues
+    end
+  end
+
+  task :repo_metadata => :environment do |t|
+    babysitter(t) do
+      puts "Dispatching repos and scraping metadata..."
+      ScraperDispatcher.scrape_metadata
+    end
+  end
+
+  task :redis_requeue, [:queue_name, :query] => :environment do |t, args|
+    puts "Enqueuing redis..."
+    ScraperDispatcher.redis_requeue(args.to_h)
   end
 end
 
-task "scrape:all" => ["ruby_gems:gems", "github:all"]
+namespace :github_api do
+  task :search_repos, [:skip_to_star] => :environment do |t, args|
+    require_relative '../api/github_search_wrapper.rb'
 
-task "gems:gscores" => :environment do
-  RubyGem.update_score
+    GithubSearchWrapper.paginate_repos(args.to_h)
+  end
+
+  task :public_repos, [:start_id, :stop_id] => :environment do |t, args|
+    require_relative '../api/github_repos_wrapper'
+
+    GithubReposWrapper.paginate_repos(args.to_h)
+  end
 end
 
 def babysitter(task = NullTask.new)
