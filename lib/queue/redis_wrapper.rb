@@ -18,10 +18,12 @@ class RedisWrapper
   end
 
   def next_repo(queue_name)
-    if queue_name == REDIS_ACTIVE_QUEUE_NAME
-      self.next_active_repo
+    if queue_name == REDIS_PRIORITY_QUEUE_NAME
+      next_priority_repo
+    elsif queue_name == REDIS_ACTIVE_QUEUE_NAME
+      next_active_repo
     elsif queue_name == REDIS_BLANK_QUEUE_NAME
-      self.next_blank_repo
+      next_blank_repo
     else
       raise "Next repo is being requested for unrecognized redis queue."
     end
@@ -48,20 +50,23 @@ class RedisWrapper
     puts "#{redis.llen queue_name} were enqueued in #{((Time.now - start_time) / 60).round(2)} mins"
   end
 
-  def redis_priority_requeue(queue_name: REDIS_PRIORITY_QUEUE_NAME, query: "stars > 10")
+  def redis_priority_requeue(queue_name: REDIS_PRIORITY_QUEUE_NAME, query: "stars > 10000", rescore: false)
+    puts "Clearing priority queue..."
     redis.del queue_name
 
     tracked_repos = Repository.where(query)
     num_repos = tracked_repos.count
     puts "Retrieved #{num_repos} repositories"
 
-    # calculate scores for repo pool
-    count = 0
-    tracked_repos.in_batches do |batch|
-      batch.each do |repo|
-        repo.update_score
-        count += 1
-        puts "#{count} repos scored"
+    # Calculate scores for repo pool
+    if rescore
+      count = 0
+      tracked_repos.in_batches do |batch|
+        batch.each do |repo|
+          repo.update_score
+          count += 1
+          puts "#{count} repos scored"
+        end
       end
     end
 
@@ -83,7 +88,9 @@ class RedisWrapper
           redis.lpush queue_name, {
             id: repo.id,
             url: repo.url,
-            priority: priority
+            priority: priority,
+            priority_score: 10.0,
+            freq_popped: 0
           }.to_json
         end
         puts "#{bucket_size} repos prioritized and enqueued."
@@ -103,13 +110,45 @@ class RedisWrapper
     )
   end
 
+  # TODO: pulling redis into memory is inefficient and won't work with
+  # multiple scrapers
+  def next_priority_repo
+    queue_name = REDIS_PRIORITY_QUEUE_NAME
+    in_memory_queue = PriorityQueue.new
+
+    all_repos = redis.lrange(queue_name, 0, -1)
+    all_repos.each do |repo_data|
+      parsed_data = JSON.parse(repo_data)
+
+      repo = RedisRepository.new(
+        parsed_data["id"],
+        parsed_data["url"],
+        parsed_data["priority"],
+        parsed_data["freq_popped"]
+      )
+
+      in_memory_queue << repo
+    end
+
+    next_repo = JSON.parse(in_memory_queue.pop_and_push.to_json)
+
+    # Save new queue to redis
+    redis.del queue_name
+    in_memory_queue.elements[1..-1].each do |ele|
+      redis.lpush queue_name, ele.to_json
+    end
+
+    next_repo
+  end
+
   def next_active_repo
     next_data = redis.lpop(REDIS_ACTIVE_QUEUE_NAME)
     redis.rpush(REDIS_ACTIVE_QUEUE_NAME, next_data)
-    next_data
+    JSON.parse(next_data)
   end
 
   def next_blank_repo
-    redis.lpop(REDIS_BLANK_QUEUE_NAME)
+    next_data = redis.lpop(REDIS_BLANK_QUEUE_NAME)
+    JSON.parse(next_data)
   end
 end
