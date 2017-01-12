@@ -1,4 +1,6 @@
+# Requires a redis connection to a valid redis server.
 class RedisWrapper
+
   REDIS_ACTIVE_QUEUE_NAME   = 'repositories'
   REDIS_PRIORITY_QUEUE_NAME = 'prioritized_repositories'
   REDIS_BLANK_QUEUE_NAME    = 'blank_repositories'
