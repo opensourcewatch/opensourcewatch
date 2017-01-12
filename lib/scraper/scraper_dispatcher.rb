@@ -8,20 +8,22 @@ class ScraperDispatcher
   @current_repo = nil
   @redis_wrapper = RedisWrapper.new
 
-  # TODO: Add a pathway to scrape repos based on the prioritized queue
   # TODO: refactor rake tasks
 
-  # TODO: Debug and test
-  def self.scrape_metadata
-    scraper_handler { GithubRepoScraper.update_repo_data([@current_repo]) }
-  end
+  # TODO: Add a pathway to scrape repos based on the prioritized queue
 
-  def self.scrape_commits
-    scraper_handler { GithubRepoScraper.commits(repositories: [@current_repo]) }
-  end
-
-  def self.scrape_issues
-    scraper_handler { GithubRepoScraper.issues(repositories: [@current_repo]) }
+  def self.scrape(queue_name, issues_on: false)
+    if queue_name == RedisWrapper::REDIS_ACTIVE_QUEUE_NAME
+      scraper_handler(queue_name) do
+        GithubRepoScraper.commits(repositories: [@current_repo])
+        GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
+      end
+    elsif queue_name == RedisWrapper::REDIS_BLANK_QUEUE_NAME
+      # TODO: Debug and test
+      scraper_handler(queue_name) { GithubRepoScraper.update_repo_data([@current_repo]) }
+    else
+      raise "That queue name does not exist. Exiting Dispatcher."
+    end
   end
 
   private
@@ -44,3 +46,5 @@ class ScraperDispatcher
     end
   end
 end
+
+binding.pry
