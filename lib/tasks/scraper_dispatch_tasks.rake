@@ -3,14 +3,19 @@ namespace :dispatch do
   require_relative '../scraper/scraper_dispatcher'
   require_relative '../scraper/github_repo_scraper'
 
+  task :priority_commits => :environment do |t|
+    puts "Dispatching priority commits scraping pathway..."
+    ScraperDispatcher.scrape(queue_name: "prioritized_repositories")
+  end
+
   task :commits => :environment do |t|
-    puts "Dispatching commits and issues scraping pathway..."
+    puts "Dispatching commits scraping pathway..."
     ScraperDispatcher.scrape
   end
 
   task :issues => :environment do |t|
-    puts "Dispatching issues scraping pathway..."
-    ScraperDispatcher.scrape(issues_on: true)
+    puts "Dispatching commits and issues scraping pathway..."
+    ScraperDispatcher.scrape(commits_on: false, issues_on: true)
   end
 
   task :metadata => :environment do |t|
