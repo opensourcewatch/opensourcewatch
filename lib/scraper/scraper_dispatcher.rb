@@ -1,20 +1,11 @@
+require_relative '../log_manager/log_manager'
+
 class ScraperDispatcher
   REDIS_ACTIVE_QUEUE_NAME = 'repositories'
   REDIS_BLANK_QUEUE_NAME = 'blank_repositories'
 
   @current_repo = nil
-
-  def self.scrape_metadata
-    repo_significance { GithubRepoScraper.update_repo_data([@current_repo]) }
-  end
-
-  def self.scrape_commits
-    repo_activity { GithubRepoScraper.commits(repositories: [@current_repo]) }
-  end
-
-  def self.scrape_issues
-    repo_activity { GithubRepoScraper.issues(repositories: [@current_repo]) }
-  end
+  @current_action = nil
 
   def self.redis_requeue(queue_name: REDIS_ACTIVE_QUEUE_NAME, query: "stars > 10")
     redis.del queue_name
@@ -37,6 +28,22 @@ class ScraperDispatcher
     puts "#{redis.llen queue_name} were enqueued in #{((Time.now - start_time) / 60).round(2)} mins"
   end
 
+
+  def self.scrape_metadata
+    @log_manager = LogManager.new('metadata')
+    repo_activity { GithubRepoScraper.update_repo_data([@current_repo]) }
+  end
+
+  def self.scrape_commits
+    @log_manager = LogManager.new('commits')
+    repo_activity { GithubRepoScraper.commits(repositories: [@current_repo]) }
+  end
+
+  def self.scrape_issues
+    @log_manager = LogManager.new('issues')
+    repo_activity { GithubRepoScraper.issues(repositories: [@current_repo]) }
+  end
+
   private
 
   def self.redis
@@ -49,51 +56,36 @@ class ScraperDispatcher
     )
   end
 
-  def self.next_active_repo
-    next_data = redis.lpop(REDIS_ACTIVE_QUEUE_NAME)
-    redis.rpush(REDIS_ACTIVE_QUEUE_NAME, next_data)
-    next_data
+  def self.time_scraping(start_time)
+    "#{((Time.now - start_time) / 60).round(2)} mins"
   end
 
-  def self.next_blank_repo
-    redis.lpop(REDIS_BLANK_QUEUE_NAME)
-  end
-
-  # TODO: refactor ? repo_activity and repo significance are almost identical
   def self.repo_activity
-    start_time = Time.now
     scrape_count = 0
-    queue_length = redis.llen(REDIS_ACTIVE_QUEUE_NAME).to_i
+    start_time = Time.now
+    @log_manager.log_scraping do
+      loop do
+        repo_data = JSON.parse(next_repo)
+        @current_repo = Repository.find(repo_data['id'])
 
-    loop do
-      repo_data = JSON.parse(next_active_repo)
+        yield if block_given?
 
-      @current_repo = Repository.find(repo_data['id'])
-
-      puts "Scraping: #{repo_data['url']}"
-
-      yield if block_given?
-
-      scrape_count += 1
-      puts "Scraped #{scrape_count}/#{queue_length} in #{((Time.now - start_time) / 60).round(2)} mins"
+        scrape_count += 1
+        @log_manager.last_activity_log =
+          "Last URL Scraped: #{repo_data['url']}.\n" +
+          "Scraped #{scrape_count} in #{time_scraping(start_time)}."
+      end
     end
   end
 
-  def self.repo_significance
-    start_time = Time.now
-    scrape_count = 0
-    queue_length = redis.llen(REDIS_BLANK_QUEUE_NAME).to_i
-
-    loop do
-      repo_data = JSON.parse(next_blank_repo)
-
-      @current_repo = Repository.find(repo_data['id'])
-
-      puts "Scraping: #{repo_data['url']}"
-      yield if block_given?
-      puts "Scraped #{scrape_count} our of #{queue_length} in #{((Time.now - start_time) / 60).round(2)} mins"
-
-      scrape_count += 1
+  def self.next_repo
+    if @log_manager.current_activity == 'metadata'
+      queue = REDIS_BLANK_QUEUE_NAME
+    else
+      queue = REDIS_ACTIVE_QUEUE_NAME
     end
+    next_data = redis.lpop(queue)
+    redis.rpush(queue, next_data)
+    next_data
   end
 end
