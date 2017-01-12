@@ -74,7 +74,9 @@ class RedisWrapper
     tracked_repos = tracked_repos.order(:score)
     bucket_size = (num_repos.to_f / PRIORITY_RANGE.length).ceil
 
-    # Assign priority to every redis hash
+    # TODO: Assign priority to them and heapify them before pushing to
+    # redis
+
     # Pushes the lowest priority up to the highest
     # The left side of the queue is the high side
     redis.pipelined do
