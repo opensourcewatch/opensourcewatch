@@ -12,7 +12,9 @@ class ScraperDispatcher
   # TODO: Add a pathway to scrape repos based on the prioritized queue
 
   def self.scrape(queue_name: RedisWrapper::REDIS_ACTIVE_QUEUE_NAME, issues_on: false)
-    if queue_name == RedisWrapper::REDIS_ACTIVE_QUEUE_NAME
+    if queue_name == RedisWrapper::REDIS_ACTIVE_QUEUE_NAME ||
+       queue_name == RedisWrapper::REDIS_PRIORITY_QUEUE_NAME
+       
       scraper_handler(queue_name) do
         GithubRepoScraper.commits(repositories: [@current_repo])
         GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
