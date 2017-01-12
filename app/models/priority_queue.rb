@@ -1,5 +1,5 @@
-# TODO: convert to use redis
-class RelativePriorityQueue
+# Virtual model to manage the prioritized redis queue
+class PriorityQueue
   attr_reader :elements
 
   def initialize
@@ -7,7 +7,7 @@ class RelativePriorityQueue
   end
 
   def <<(element)
-    element.recalculate_priority
+    element.calculate_priority
     @elements << element
     bubble_up(@elements.size - 1)
   end
@@ -41,6 +41,7 @@ class RelativePriorityQueue
   def pop_and_push
     ele = pop
     self.<<(ele)
+    ele
   end
 
   def bubble_down(index)
@@ -58,5 +59,42 @@ class RelativePriorityQueue
     exchange(index, child_index)
 
     bubble_down(child_index)
+  end
+
+  def analyze
+    # Pop X times
+    iterations = 2 * elements.length
+    iterations.times do
+      self.pop_and_push
+    end
+
+    # Get all but the root element
+    elements = self.elements[1..-1]
+
+    priority_freq_pairs = elements.map do |ele|
+      [ele.priority, ele.freq_popped]
+    end
+
+    # Create a hash to track total freq per prirority
+    priority_freq_totals = {}
+    (1..10).map do |key|
+      key = key
+      priority_freq_totals[key] = 0
+    end
+
+    # Sum the number of pops for each value
+    # This is the number of times each bucket is hit
+    priority_freq_pairs.each do |pair|
+      key = pair[0]
+      freq = pair[1]
+      priority_freq_totals[key] += freq
+    end
+
+    percentages_hash = {}
+    priority_freq_totals.each do |key, val|
+      percentages_hash[key] = (val / iterations.to_f * 100).round(2)
+    end
+
+    p percentages_hash
   end
 end
