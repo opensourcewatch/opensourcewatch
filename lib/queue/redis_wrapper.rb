@@ -11,6 +11,10 @@ class RedisWrapper
     redis
   end
 
+  def queue_length(queue_name)
+    redis.llen(queue_name).to_i
+  end
+
   def next_active_repo
     next_data = redis.lpop(REDIS_ACTIVE_QUEUE_NAME)
     redis.rpush(REDIS_ACTIVE_QUEUE_NAME, next_data)
