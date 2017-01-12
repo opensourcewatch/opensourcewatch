@@ -15,14 +15,14 @@ class RedisWrapper
     redis.llen(queue_name).to_i
   end
 
-  def next_active_repo
-    next_data = redis.lpop(REDIS_ACTIVE_QUEUE_NAME)
-    redis.rpush(REDIS_ACTIVE_QUEUE_NAME, next_data)
-    next_data
-  end
-
-  def next_blank_repo
-    redis.lpop(REDIS_BLANK_QUEUE_NAME)
+  def next_repo(queue_name)
+    if queue_name == REDIS_ACTIVE_QUEUE_NAME
+      self.next_active_repo
+    elsif queue_name == REDIS_BLANK_QUEUE_NAME
+      self.next_blank_repo
+    else
+      raise "Next repo is being requested for unrecognized redis queue."
+    end
   end
 
   def redis_requeue(queue_name: REDIS_ACTIVE_QUEUE_NAME, query: "stars > 10")
@@ -99,5 +99,15 @@ class RedisWrapper
       host: ip,
       password: pw
     )
+  end
+
+  def next_active_repo
+    next_data = redis.lpop(REDIS_ACTIVE_QUEUE_NAME)
+    redis.rpush(REDIS_ACTIVE_QUEUE_NAME, next_data)
+    next_data
+  end
+
+  def next_blank_repo
+    redis.lpop(REDIS_BLANK_QUEUE_NAME)
   end
 end
