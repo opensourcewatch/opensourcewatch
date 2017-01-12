@@ -1,6 +1,10 @@
 class ScraperDispatcher
-  REDIS_ACTIVE_QUEUE_NAME = 'repositories'
-  REDIS_BLANK_QUEUE_NAME = 'blank_repositories'
+  REDIS_ACTIVE_QUEUE_NAME   = 'repositories'
+
+  REDIS_PRIORITY_QUEUE_NAME = 'prioritized_repositories'
+  PRIORITY_RANGE = (1..10).to_a
+
+  REDIS_BLANK_QUEUE_NAME    = 'blank_repositories'
 
   @current_repo = nil
 
@@ -35,6 +39,49 @@ class ScraperDispatcher
       end
     end
     puts "#{redis.llen queue_name} were enqueued in #{((Time.now - start_time) / 60).round(2)} mins"
+  end
+
+  def self.redis_priority_requeue(queue_name: REDIS_PRIORITY_QUEUE_NAME, query: "stars > 10")
+    redis.del queue_name
+
+    tracked_repos = Repository.where(query)
+    num_repos = tracked_repos.count
+    puts "Retrieved #{num_repos} repositories"
+
+    # calculate scores for repo pool
+    count = 0
+    tracked_repos.in_batches do |batch|
+      batch.each do |repo|
+        repo.update_score
+        count += 1
+        puts "#{count} repos scored"
+      end
+    end
+
+    # Order them by score divide into X parts
+    tracked_repos = tracked_repos.order(:score)
+    bucket_size = (num_repos.to_f / PRIORITY_RANGE.length).ceil
+
+    # Assign priority to every redis hash
+    # Pushes the lowest priority up to the highest
+    # The left side of the queue is the high side
+    redis.pipelined do
+      index = 0
+      # NOTE: If we were using rails 5 we could us in_batches.with_index
+      tracked_repos.in_batches(of: bucket_size) do |batch|
+        priority = PRIORITY_RANGE[index]
+        index += 1
+
+        batch.each do |repo|
+          redis.lpush queue_name, {
+            id: repo.id,
+            url: repo.url,
+            priority: priority
+          }.to_json
+        end
+        puts "#{bucket_size} repos prioritized and enqueued."
+      end
+    end
   end
 
   private
