@@ -11,7 +11,7 @@ class ScraperDispatcher
   # TODO: refactor rake tasks
   # TODO: Add a pathway to scrape repos based on the prioritized queue
 
-  def self.scrape(queue_name: REDIS_ACTIVE_QUEUE_NAME, issues_on: false)
+  def self.scrape(queue_name: RedisWrapper::REDIS_ACTIVE_QUEUE_NAME, issues_on: false)
     if queue_name == RedisWrapper::REDIS_ACTIVE_QUEUE_NAME
       scraper_handler(queue_name) do
         GithubRepoScraper.commits(repositories: [@current_repo])
@@ -45,5 +45,3 @@ class ScraperDispatcher
     end
   end
 end
-
-binding.pry
