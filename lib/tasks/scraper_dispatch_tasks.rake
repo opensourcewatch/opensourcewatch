@@ -10,11 +10,11 @@ namespace :dispatch do
 
   task :issues => :environment do |t|
     puts "Dispatching issues scraping pathway..."
-    ScraperDispatcher.scrape
+    ScraperDispatcher.scrape(issues_on: true)
   end
 
   task :metadata => :environment do |t|
     puts "Dispatching agent to work on blank repositories scraping metadata..."
-    ScraperDispatcher.scrape
+    ScraperDispatcher.scrape(queue_name: 'blank_repositories')
   end
 end
