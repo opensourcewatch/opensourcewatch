@@ -5,6 +5,8 @@ class RedisWrapper
   REDIS_PRIORITY_QUEUE_NAME = 'prioritized_repositories'
   REDIS_BLANK_QUEUE_NAME    = 'blank_repositories'
 
+  PRIORITY_RANGE = (1..10).to_a
+
   attr_reader :redis
 
   def initialize
@@ -49,7 +51,6 @@ class RedisWrapper
     puts "#{redis.llen queue_name} were enqueued in #{((Time.now - start_time) / 60).round(2)} mins"
   end
 
-  # TODO: Modify to enqueue as a sorted set
   def redis_priority_requeue(queue_name: REDIS_PRIORITY_QUEUE_NAME, query: "stars > 10000", rescore: false)
     puts "Clearing priority queue..."
     redis.del queue_name
@@ -62,8 +63,19 @@ class RedisWrapper
     tracked_repos = tracked_repos.order(:score)
 
     puts "Creating priority queue..."
-    priority_queue = PriorityQueue.new(redis, queue_name, tracked_repos)
-    priority_queue.enqueue
+    # TODO: Need to cycle through the 10 priority levels create the queues
+    bucket_size = (tracked_repos.count.to_f / PRIORITY_RANGE.length).ceil
+
+    # Enqueue a sub queue for each priority level
+    index = 0
+    tracked_repos.in_batches(of: bucket_size) do |batch|
+      priority = PRIORITY_RANGE[index]
+      queue_name = sub_queue_name(REDIS_PRIORITY_QUEUE_NAME, priority.to_s)
+      index += 1
+
+      sub_queue = CircularRedisQueue.new(redis, queue_name, batch)
+      sub_queue.enqueue
+    end
   end
 
   private
@@ -108,5 +120,9 @@ class RedisWrapper
   def next_blank_repo
     next_data = redis.lpop(REDIS_BLANK_QUEUE_NAME)
     JSON.parse(next_data)
+  end
+
+  def sub_queue_name(base, extension)
+    base + "_" + extension
   end
 end
