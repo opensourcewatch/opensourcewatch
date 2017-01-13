@@ -1,0 +1,2 @@
+#!/bin/bash
+rake dispatch:repo_commits
