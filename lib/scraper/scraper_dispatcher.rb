@@ -8,17 +8,14 @@ class ScraperDispatcher
   @current_repo = nil
   @redis_wrapper = RedisWrapper.new
 
-  # TODO: refactor rake tasks
-  # TODO: Add a pathway to scrape repos based on the prioritized queue
-
   def self.scrape(queue_name: RedisWrapper::REDIS_ACTIVE_QUEUE_NAME, commits_on: true, issues_on: false)
-    if queue_name == RedisWrapper::REDIS_ACTIVE_QUEUE_NAME ||
-       queue_name == RedisWrapper::REDIS_PRIORITY_QUEUE_NAME
-
+    if queue_name == RedisWrapper::REDIS_ACTIVE_QUEUE_NAME
       scraper_handler(queue_name) do
         GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
         GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
       end
+    elsif queue_name == RedisWrapper::REDIS_PRIORITY_QUEUE_NAME
+      priority_scraper_handler(queue_name)
     elsif queue_name == RedisWrapper::REDIS_BLANK_QUEUE_NAME
       # TODO: Debug and test
       scraper_handler(queue_name) { GithubRepoScraper.update_repo_data([@current_repo]) }
@@ -34,6 +31,8 @@ class ScraperDispatcher
     scrape_count = 0
 
     loop do
+      # TODO: dispatcher should work directly with a queue that uses redis underneath,
+      # not the other way around
       repo_data = @redis_wrapper.next_repo(queue_name)
 
       @current_repo = Repository.find(repo_data['id'])
@@ -44,6 +43,29 @@ class ScraperDispatcher
 
       scrape_count += 1
       puts "Scraped #{scrape_count} in #{((Time.now - start_time) / 60).round(2)} mins"
+    end
+  end
+
+  def self.priority_handler
+    priority_tags = RedisWrapper::PRIORITY_RANGE
+    base_queue_name = RedisWrapper::REDIS_PRIORITY_QUEUE_NAME
+
+    queues = []
+    priority_tags.each do |tag|
+      queue_name = base_queue_name + '_' + tag.to_s
+      queues << CircularRedisQueue.new(@redis_wrapper.redis, queue_name)
+    end
+
+    # add them to a skewed distribution list
+
+    loop do
+      # get leftmost queue and push to the end
+      queue = queues.shift
+      queues.push(queue)
+
+      @current_repo = Repository.find(queue.next['id'])
+
+      GithubRepoScraper.commits(repositories: [@current_repo])
     end
   end
 end
