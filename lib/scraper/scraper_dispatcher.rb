@@ -9,15 +9,7 @@ class ScraperDispatcher
 
   @current_repo = nil
 
-  def self.scrape_repos(enqueue: false, query: "stars > 10", commits_on: true, issues_on: false)
-    queue = CircularRedisQueue.new(enqueue: enqueue, query: query)
-    scraper_handler(queue) do
-      GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
-      GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
-    end
-  end
-
-  def self.scrape_prioritized_repos(enqueue: false, query: "stars > 10000", commits_on: true, issues_on: false)
+  def self.prioritized_repos_activity(enqueue: false, query: "stars > 10000", commits_on: true, issues_on: false)
     queue = PriorityQueue.new(enqueue: enqueue, query: query)
     scraper_handler(queue) do
       GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
@@ -25,10 +17,20 @@ class ScraperDispatcher
     end
   end
 
-  def self.scrape_blank_repos(enqueue: false, query: "stars IS_NULL")
-    # TODO: Debug and test
-    queue = RedisQueue.new(enqueue: enqueue, query: query)
-    scraper_handler(queue_name) { GithubRepoScraper.update_repo_data([@current_repo]) }
+  def self.repos_activity(enqueue: false, query: "stars > 10", commits_on: true, issues_on: false)
+    repos = Repository.where(query)
+    queue = CircularRedisQueue.new(repos, enqueue: enqueue)
+    scraper_handler(queue) do
+      GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
+      GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
+    end
+  end
+
+  def self.update_meta_data(enqueue: false, query: "stars IS_NULL")
+    repos = Repository.where(query)
+    queue = RedisQueue.new(repos, enqueue: enqueue)
+    # TODO: Debug and test the update repo data method on github scraper
+    scraper_handler(queue) { GithubRepoScraper.update_repo_data([@current_repo]) }
   end
 
   private

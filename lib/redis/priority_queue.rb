@@ -42,7 +42,7 @@ class PriorityQueue
       queue_name = sub_queue_name(priority.to_s)
       index += 1
 
-      sub_queue = CircularRedisQueue.new(batch, queue_name)
+      sub_queue = CircularRedisQueue.new(batch, queue_name: queue_name)
       sub_queue.enqueue_redis
     end
   end
