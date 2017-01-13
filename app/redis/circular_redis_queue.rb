@@ -4,7 +4,7 @@ class CircularRedisQueue
 
   def initialize(redis, queue_name, repos = nil)
     @redis = redis
-    @queue_name = queue_name
+    @queue_name = queue_name || ENV['REDIS_CIRCULAR_QUEUE_NAME']
     @repos = repos # Only needed for enqueing
   end
 
