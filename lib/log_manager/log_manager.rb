@@ -4,6 +4,7 @@ class LogManager
   attr_accessor :current_activity, :last_activity_log
 
   USER_CANCEL = ''
+  PROCESS_KILLED = 'SIGTERM'
 
   def initialize(current_activity)
     init_log_dir
@@ -19,6 +20,8 @@ class LogManager
   rescue Exception => e
     if e.message == USER_CANCEL
       @last_activity_log = "USER CANCEL\n" + @last_activity_log
+    elsif e.message.chomp == PROCESS_KILLED
+      @last_activity_log = "PROCESS KILLED\n" + @last_activity_log
     elsif
       @last_activity_log = e.backtrace.unshift(@last_activity_log, e.message)
     end
