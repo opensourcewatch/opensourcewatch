@@ -1,14 +1,16 @@
 require_relative 'github_repo_scraper'
+require_relative '../redis/circular_redis_queue'
+require_relative '../redis/priority_queue'
+require_relative '../redis/redis_queue'
 
 class ScraperDispatcher
   # Dispatches scrapers to use various redis queues and scrape for different
   # types of data
 
   @current_repo = nil
-  @redis_wrapper = RedisWrapper.new
-  
+
   def self.scrape_repos(commits_on: true, issues_on: false)
-    queue = CircularRedisQueue.new(@redis_wrapper.redis)
+    queue = CircularRedisQueue.new
     scraper_handler(queue) do
       GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
       GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
@@ -16,7 +18,7 @@ class ScraperDispatcher
   end
 
   def self.scrape_prioritized_repos(commits_on: true, issues_on: false)
-    queue = PriorityQueue.new(@redis_wrapper.redis)
+    queue = PriorityQueue.new
     scraper_handler(queue) do
       GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
       GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
@@ -25,7 +27,7 @@ class ScraperDispatcher
 
   def self.scrape_blank_repos
     # TODO: Debug and test
-    queue = RedisQueue.new(@redis_wrapper.redis, queue_name)
+    queue = RedisQueue.new
     scraper_handler(queue_name) { GithubRepoScraper.update_repo_data([@current_repo]) }
   end
 
