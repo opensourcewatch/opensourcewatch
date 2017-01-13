@@ -9,6 +9,8 @@ class GithubRepoScraper
 
   # TODO: add check so that these methods don't necessarily take and active record
   # model, because we don't want to hit the db everytime in the dispatcher
+  # TODO: we could pass in a shallow repository model and only actually find the model
+  # if we need to associate a commit, or actually do an update etc.
   class << self
     # Gets the following:
     # - number of stars the project has
@@ -151,6 +153,7 @@ class GithubRepoScraper
 
     def get_repo_doc(repo, path="")
       @current_repo = repo
+      # TODO: consider making a psuedo object to pass around
       doc_path = @current_repo.url + path
       return @github_doc.new_doc(doc_path)
     end
