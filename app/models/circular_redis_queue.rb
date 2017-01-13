@@ -14,6 +14,7 @@ class CircularRedisQueue
       @repos.each do |repo|
         # Must be a string
         member = {
+          name: repo.name,
           id: repo.id,
           url: repo.url,
         }.to_json
