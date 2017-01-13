@@ -1,100 +1,87 @@
+# TODO: refactor to be a sorted set wrapper
 # Virtual model to manage the prioritized redis queue
 class PriorityQueue
-  attr_reader :elements
+  PRIORITY_RANGE = (1..10).to_a
 
-  def initialize
-    @elements = [nil]
+  def initialize(redis, queue_name, repos = nil)
+    @redis = redis
+    @queue_name = queue_name
+    @repos = repos # Only needed for enqueing
   end
 
-  def <<(element)
-    element.calculate_priority
-    @elements << element
-    bubble_up(@elements.size - 1)
-  end
+  def enqueue
+    num_repos = @repos.count
+    bucket_size = (num_repos.to_f / PRIORITY_RANGE.length).ceil
 
-  def bubble_up(index)
-    parent_index = (index/2)
+    # Insert into redis. The left side of the queue is the high side
+    @redis.pipelined do
+      index = 0
+      # NOTE: If we were using rails 5 we could us in_batches.with_index
+      @repos.in_batches(of: bucket_size) do |batch|
+        priority = PRIORITY_RANGE.length - PRIORITY_RANGE[index]
+        index += 1
+        batch.each do |repo|
+          # Must be a string
+          member = {
+            id: repo.id,
+            url: repo.url,
+            priority: priority,
+          }.to_json
 
-    return if index <= 1
-
-    return if @elements[parent_index] >= @elements[index]
-
-    exchange(index, parent_index)
-
-    bubble_up(parent_index)
-  end
-
-  def exchange(source, target)
-    @elements[source], @elements[target] = @elements[target], @elements[source]
-  end
-
-  def pop
-    exchange(1, @elements.size - 1)
-
-    max = @elements.pop
-    max.increment # recalls how many times it was popped, decreases its index
-
-    bubble_down(1)
-    max
-  end
-
-  def pop_and_push
-    ele = pop
-    self.<<(ele)
-    ele
-  end
-
-  def bubble_down(index)
-    child_index = (index * 2)
-
-    return if child_index > @elements.size - 1
-
-    not_the_last_element = child_index < @elements.size - 1
-    left_element = @elements[child_index]
-    right_element = @elements[child_index + 1]
-    child_index += 1 if not_the_last_element && right_element > left_element
-
-    return if @elements[index] >= @elements[child_index]
-
-    exchange(index, child_index)
-
-    bubble_down(child_index)
-  end
-
-  def analyze
-    # Pop X times
-    iterations = 2 * elements.length
-    iterations.times do
-      self.pop_and_push
+          # Use the priority value as the initial score
+          add(member, priority)
+        end
+        puts "#{bucket_size} repos prioritized and enqueued."
+      end
     end
+  end
 
-    # Get all but the root element
-    elements = self.elements[1..-1]
+  def next
+    # Redis sorts by the lowest score by default
+    member = @redis.zrangebyscore("prioritized_repositories", "-inf", "+inf", withscores: true).first
+    update_score(member)
+    data = JSON.parse(member[0]) # The scraper needs the id
+  end
 
-    priority_freq_pairs = elements.map do |ele|
-      [ele.priority, ele.freq_popped]
-    end
+  private
 
-    # Create a hash to track total freq per prirority
-    priority_freq_totals = {}
-    (1..10).map do |key|
-      key = key
-      priority_freq_totals[key] = 0
-    end
+  def add(member, score)
+    @redis.zadd @queue_name, score, member
+  end
 
-    # Sum the number of pops for each value
-    # This is the number of times each bucket is hit
-    priority_freq_pairs.each do |pair|
-      key = pair[0]
-      freq = pair[1]
-      priority_freq_totals[key] += freq
-    end
+  def update_score(member)
+    repo_data = JSON.parse(member[0])
+    score = member[1]
+    times_popped = score / repo_data['priority']
 
-    percentages_hash = {}
-    priority_freq_totals.each do |key, val|
-      percentages_hash[key] = (val / iterations.to_f * 100).round(2)
-    end
+    increment = repo_data['priority'] * ( times_popped + 1 ) - score
 
-    p percentages_hash
+    @redis.zincrby("prioritized_repositories", increment, member[0])
   end
 end
+
+
+
+
+# # Push and pop
+# all_repos = redis.lrange(queue_name, 0, -1)
+# all_repos.each do |repo_data|
+#   parsed_data = JSON.parse(repo_data)
+#
+#   repo = RedisRepository.new(
+#     parsed_data["id"],
+#     parsed_data["url"],
+#     parsed_data["priority"],
+#     parsed_data["freq_popped"]
+#   )
+#
+#   in_memory_queue << repo
+# end
+#
+# next_repo = JSON.parse(in_memory_queue.pop_and_push.to_json)
+#
+# # Save new queue to redis
+# redis.del queue_name
+# in_memory_queue.elements[1..-1].each do |ele|
+#   redis.lpush queue_name, ele.to_json
+# end

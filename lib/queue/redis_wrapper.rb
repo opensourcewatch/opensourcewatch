@@ -5,8 +5,6 @@ class RedisWrapper
   REDIS_PRIORITY_QUEUE_NAME = 'prioritized_repositories'
   REDIS_BLANK_QUEUE_NAME    = 'blank_repositories'
 
-  PRIORITY_RANGE = (1..10).to_a
-
   attr_reader :redis
 
   def initialize
@@ -29,6 +27,7 @@ class RedisWrapper
     end
   end
 
+  # TODO: refactor to a naive redis queue object
   def redis_requeue(queue_name: REDIS_ACTIVE_QUEUE_NAME, query: "stars > 10")
     redis.del queue_name
 
@@ -50,54 +49,21 @@ class RedisWrapper
     puts "#{redis.llen queue_name} were enqueued in #{((Time.now - start_time) / 60).round(2)} mins"
   end
 
+  # TODO: Modify to enqueue as a sorted set
   def redis_priority_requeue(queue_name: REDIS_PRIORITY_QUEUE_NAME, query: "stars > 10000", rescore: false)
     puts "Clearing priority queue..."
     redis.del queue_name
 
     tracked_repos = Repository.where(query)
-    num_repos = tracked_repos.count
-    puts "Retrieved #{num_repos} repositories"
+    puts "Retrieved #{tracked_repos.count} repositories"
 
-    # Calculate scores for repo pool
-    if rescore
-      count = 0
-      tracked_repos.in_batches do |batch|
-        batch.each do |repo|
-          repo.update_score
-          count += 1
-          puts "#{count} repos scored"
-        end
-      end
-    end
+    calculate_scores(tracked_repos) if rescore
 
-    # Order them by score divide into X parts
     tracked_repos = tracked_repos.order(:score)
-    bucket_size = (num_repos.to_f / PRIORITY_RANGE.length).ceil
 
-    # TODO: Assign priority to them and heapify them before pushing to
-    # redis
-
-    # Pushes the lowest priority up to the highest
-    # The left side of the queue is the high side
-    redis.pipelined do
-      index = 0
-      # NOTE: If we were using rails 5 we could us in_batches.with_index
-      tracked_repos.in_batches(of: bucket_size) do |batch|
-        priority = PRIORITY_RANGE[index]
-        index += 1
-
-        batch.each do |repo|
-          redis.lpush queue_name, {
-            id: repo.id,
-            url: repo.url,
-            priority: priority,
-            priority_score: 10.0,
-            freq_popped: 0
-          }.to_json
-        end
-        puts "#{bucket_size} repos prioritized and enqueued."
-      end
-    end
+    puts "Creating priority queue..."
+    priority_queue = PriorityQueue.new(redis, queue_name, tracked_repos)
+    priority_queue.enqueue
   end
 
   private
@@ -112,43 +78,33 @@ class RedisWrapper
     )
   end
 
-  # TODO: pulling redis into memory is inefficient and won't work with
-  # multiple scrapers
-  def next_priority_repo
-    queue_name = REDIS_PRIORITY_QUEUE_NAME
-    in_memory_queue = PriorityQueue.new
-
-    all_repos = redis.lrange(queue_name, 0, -1)
-    all_repos.each do |repo_data|
-      parsed_data = JSON.parse(repo_data)
-
-      repo = RedisRepository.new(
-        parsed_data["id"],
-        parsed_data["url"],
-        parsed_data["priority"],
-        parsed_data["freq_popped"]
-      )
-
-      in_memory_queue << repo
+  def calculate_scores
+    count = 0
+    tracked_repos.in_batches do |batch|
+      batch.each do |repo|
+        repo.update_score
+        count += 1
+        puts "#{count} repos scored"
+      end
     end
-
-    next_repo = JSON.parse(in_memory_queue.pop_and_push.to_json)
-
-    # Save new queue to redis
-    redis.del queue_name
-    in_memory_queue.elements[1..-1].each do |ele|
-      redis.lpush queue_name, ele.to_json
-    end
-
-    next_repo
   end
 
+  # TODO: refactor to just pop and push using ZREM and the sorted set
+  def next_priority_repo
+    queue_name = REDIS_PRIORITY_QUEUE_NAME
+    queue = PriorityQueue.new(redis, queue_name)
+
+    next_repo = queue.next
+  end
+
+  # TODO: refactor to use a looping queue object
   def next_active_repo
     next_data = redis.lpop(REDIS_ACTIVE_QUEUE_NAME)
     redis.rpush(REDIS_ACTIVE_QUEUE_NAME, next_data)
     JSON.parse(next_data)
   end
 
+  # TODO: refactor to use a one-shot queue object
   def next_blank_repo
     next_data = redis.lpop(REDIS_BLANK_QUEUE_NAME)
     JSON.parse(next_data)
