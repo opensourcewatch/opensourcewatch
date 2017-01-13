@@ -1,9 +1,10 @@
-# TODO: refactor to divide into 10 queues
+require_relative 'redis_wrapper'
+
 # Virtual model to manage the prioritized redis queue
 class CircularRedisQueue
 
-  def initialize(redis, queue_name, repos = nil)
-    @redis = redis
+  def initialize(queue_name, repos = nil)
+    @redis = RedisWrapper.new.redis
     @queue_name = queue_name || ENV['REDIS_CIRCULAR_QUEUE_NAME']
     @repos = repos # Only needed for enqueing
   end
