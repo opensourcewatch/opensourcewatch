@@ -47,16 +47,11 @@ class ScraperDispatcher
   end
 
   def self.priority_handler
-    priority_tags = RedisWrapper::PRIORITY_RANGE
-    base_queue_name = RedisWrapper::REDIS_PRIORITY_QUEUE_NAME
-
-    queues = []
-    priority_tags.each do |tag|
-      queue_name = base_queue_name + '_' + tag.to_s
-      queues << CircularRedisQueue.new(@redis_wrapper.redis, queue_name)
-    end
+    unique_queues = generate_queues
 
     # add them to a skewed distribution list
+      # n! elements in queue
+    queues = skewed_dist_of_queues(unique_queues)
 
     loop do
       # get leftmost queue and push to the end
@@ -68,4 +63,31 @@ class ScraperDispatcher
       GithubRepoScraper.commits(repositories: [@current_repo])
     end
   end
+
+  def self.generate_queues
+    priority_tags = RedisWrapper::PRIORITY_RANGE
+    base_queue_name = RedisWrapper::REDIS_PRIORITY_QUEUE_NAME
+
+    unique_queues = []
+    priority_tags.each do |tag|
+      queue_name = base_queue_name + '_' + tag.to_s
+      unique_queues << CircularRedisQueue.new(@redis_wrapper.redis, queue_name)
+    end
+    unique_queues
+  end
+
+  def self.skewed_dist_of_queues(queues)
+    # Want to create a distribution like:
+    #   [3, 2, 1] + [3, 2] + [3]
+    skewed_dist_of_queues = []
+    while queues.length > 0
+      queues.each do |queue|
+        skewed_dist_of_queues << queue
+      end
+      queues.pop
+    end
+    skewed_dist_of_queues
+  end
 end
+
+binding.pry
