@@ -1,4 +1,3 @@
-require_relative '../queue/redis_wrapper'
 require_relative 'github_repo_scraper'
 
 class ScraperDispatcher
@@ -7,10 +6,7 @@ class ScraperDispatcher
 
   @current_repo = nil
   @redis_wrapper = RedisWrapper.new
-
-  # TODO: push knowledge of the env variables down to the individual queues and
-  # have three method calls
-
+  
   def self.scrape_repos(commits_on: true, issues_on: false)
     queue = CircularRedisQueue.new(@redis_wrapper.redis)
     scraper_handler(queue) do
