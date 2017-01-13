@@ -29,7 +29,7 @@ class RedisWrapper
     end
   end
 
-  # TODO: refactor to a naive redis queue object
+  # TODO: refactor to use a naive redis circular queue object
   def redis_requeue(queue_name: REDIS_ACTIVE_QUEUE_NAME, query: "stars > 10")
     redis.del queue_name
 
@@ -40,6 +40,7 @@ class RedisWrapper
         puts "Enqueuing #{queue_name}"
         batch.each do |repo|
           redis.rpush queue_name,{
+            name: repo.name,
             id: repo.id,
             url: repo.url
           }.to_json
@@ -78,8 +79,6 @@ class RedisWrapper
     end
   end
 
-  private
-
   def redis
     ip = ENV['REDIS_SERVER_IP']
     pw = ENV['REDIS_SERVER_PW']
@@ -89,6 +88,8 @@ class RedisWrapper
       password: pw
     )
   end
+
+  private
 
   def calculate_scores
     count = 0
