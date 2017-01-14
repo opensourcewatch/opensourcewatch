@@ -1,7 +1,9 @@
 require_relative "redis_wrapper"
 
 class RedisQueue
-  def initialize(repos = nil, queue_name: ENV['REDIS_QUEUE_NAME'], enqueue: false)
+  DEFAULT_QUEUE_NAME = ENV['REDIS_QUEUE_NAME']
+
+  def initialize(repos = nil, queue_name: self.class::DEFAULT_QUEUE_NAME, enqueue: false)
     @redis = RedisWrapper.new.redis
     @queue_name = queue_name
     @repos = repos # Only needed for enqueing
