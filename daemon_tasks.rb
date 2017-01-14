@@ -8,7 +8,6 @@ class DaemonTasks
   # nodes: by index of NODES. I.e. 0, 1, 2
   def initialize(node_ids = nil)
     @node_ids = node_ids == 'all' ? all_node_ids : node_ids
-    binding.pry
   end
 
   def list_nodes
@@ -22,19 +21,21 @@ class DaemonTasks
   end
 
   def start(process)
+    # Need a clear_files method
+    @curr_process = process
     init_daemon_folder_structure
-    new_pidfile(process)
-    task = which_task(process)
+    ensure_pidfile
+    task = which_task
     write_execution(task)
 
-    @nodes.each do |n|
-      @curr_node = NODES[n]
+    @node_ids.each do |n|
+      @curr_node = n
       execution = ssh_current
-      execution += "start-stop-daemon -v --start"
+      execution += " start-stop-daemon -v --start"
       execution += " -m --pidfile #{pidfile_path}"
       execution += " -u #{user} -d #{working_directory}"
       execution += " -b --exec #{execution_path}"
-      `execution`
+      `#{execution}`
     end
   end
 
@@ -78,14 +79,13 @@ class DaemonTasks
       @curr_node = n
 
       # --parents makes no errors thrown if extra folders need to be made
-      binding.pry
       `#{ssh_current} mkdir #{pidfile_dir} --parents`
       `#{ssh_current} mkdir #{execution_dir} --parents`
     end
   end
 
-  def which_task(process)
-    case process
+  def which_task
+    case @curr_process
     when 'commits'
       'rake dispatch:repo_commits'
     when 'issues'
@@ -98,8 +98,8 @@ class DaemonTasks
   def write_execution(task)
     `#{ssh_current} touch #{execution_path}`
     bash_path = `#{ssh_current} which bash`
-    `#{ssh_current} echo "#{bash_path}" > #{execution_path}`
-    `#{ssh_current} echo "#{task}" >> #{execution_path}`
+    `#{ssh_current} 'echo "#!#{bash_path}" > #{execution_path}'`
+    `#{ssh_current} 'echo "#{task}" >> #{execution_path}'`
     `#{ssh_current} chmod u=rwx #{execution_path}`
   end
 
@@ -137,8 +137,8 @@ class DaemonTasks
     "#{pidfile_dir}/#{pidfile}"
   end
 
-  def new_pidfile
-    `#{ssh_current} mkdir #{pidfile_path} --parents`
+  def ensure_pidfile
+    `#{ssh_current} touch #{pidfile_path}`
   end
 
   def execution_dir
