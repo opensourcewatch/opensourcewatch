@@ -99,7 +99,7 @@ class DaemonInterface
       end
     end
     check_input
-    @tasks = DaemonTasks.new(opts[:nodes])
+    @tasks = DaemonTasks.new(@options.options[:nodes])
     send_command
   end
 
