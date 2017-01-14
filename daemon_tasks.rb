@@ -2,15 +2,6 @@ require 'fileutils'
 
 # Fix exceptions for 404 and 500
 
-# Won't work as it's the user of the RUNNING machine:
-# user = ENV['USER']
-
-# Steps:
-# 1. Identify the task that needs to be run
-# 2. If a node is required thne make sure there is a values for nodes
-# 3. Send that method to be executed
-# 4. If the command is start make sure that a valid process is being used
-
 class DaemonTasks
   NODES = [
     'durendal@138.197.20.199',
@@ -18,34 +9,12 @@ class DaemonTasks
     'migl@104.236.81.65'
   ]
 
-  def initialize(nodes = nil)
-    @working_directory = "/home/#{user}/workspace/capstone"
-    # mkdir dir --parents
-    @pidfile_dir = "#{working_directory}/.daemon_tasks/tmp"
-    @execution_dir = "#{working_directory}/.daemon_tasks/tasks"
-
-    @pidfile_dir = FileUtils.mkpath("#{working_directory}/.daemon_tasks/tmp").first
-    @execution_dir = FileUtils.mkpath("#{working_directory}/.daemon_tasks/tasks").first
+  # nodes: by index of NODES. I.e. 0, 1, 2
+  def initialize(node_ids = nil)
+    @node_ids = nodes_ids == :all ? all_node_ids : nodes
+    init_daemon_folder_structure
   end
 
-  # COMMANDS:
-  # start: -s, --start
-  # stop: -k, --kill
-  # status: -t, --status
-  # restart: -r, --restart
-  # list_nodes: -l, --listnodes
-  # help: --h, --help
-  #
-  # PROCESSES:
-  # scrape commits: -c, --commits
-  # scrape metadata: -m, --metadata
-  # scrape issues: -i, --issues
-  #
-  # MATCHING OPTIONS:
-  # -n, --node NODENUMBER
-  #
-  # GENERIC OPTIONS:
-  # -a, --all
   def list_nodes
     NODES.each_with_index do |el, i|
       puts "#{i}:"
@@ -56,92 +25,140 @@ class DaemonTasks
     end
   end
 
-  # OPTIONS:
-  # -a;--all, -n;--node
-  # Needs to check if currently running
   def start(process)
-    execution = "start-stop-daemon -v --start"
-    execution += " -m --pidfile #{pidfile_path}"
-    execution += " -u #{user} -d #{working_directory}"
-    execution += " -b --exec #{execution_path}"
+    @curr_process = process
+    new_pidfile(process)
+    task = which_task(process)
+    write_execution(task)
+
+    @nodes.each do |n|
+      @curr_node = NODES[n]
+      execution = ssh_current
+      execution += "start-stop-daemon -v --start"
+      execution += " -m --pidfile #{pidfile_path}"
+      execution += " -u #{user} -d #{working_directory}"
+      execution += " -b --exec #{execution_path}"
+      `execution`
+    end
   end
 
+
   def kill
-    @execution_file = "#{process}_scraper"
+    @node_ids.each do |n|
+      @curr_node = n
+      process = `#{ssh_current} ls #{execution_dir}`.chomp
+      pid = `#{ssh_current} cat #{pidfile_dir}/*`.chomp
+      output = `#{ssh_current} ps --ppid #{pid}`
+      ppid = output.split("\n")[1].strip[/^[0-9]+/]
+      `#{ssh_current} kill #{ppid}`
+      `#{ssh_current} kill #{pid}`
+      puts "Process #{process} killed on #{node_name}"
+    end
   end
 
   def restart
-    stop('all')
-    start('all')
+    kill
+    # start('all')
   end
 
   def status
-
+    all_node_ids.each do |n|
+      @curr_node = n
+      process = `#{ssh_current} ls #{execution_dir}`.chomp
+      if running?
+        puts "RUNNING: Node #{node_name} with process #{process}."
+      else
+        puts "NOT RUNNING: Node #{node_name} should be running process #{process}."
+      end
+    end
   end
 
   private
 
-  def user
-    `echo $USER`.chomp
+  def init_daemon_folder_structure
+    @nodes_ids.each do |n|
+      @curr_node = NODES[n]
+
+      # --parents makes no errors thrown if extra folders need to be made
+      `#{ssh_current} mkdir #{pidfile_dir} --parents`
+      `#{ssh_current} mkdir #{execution_dir} --parents`
+    end
   end
 
-  def pid_file
-    "#{execution_file}.pid"
+  def which_task(process)
+    case process
+    when 'commits'
+      'rake dispatch:repo_commits'
+    when 'issues'
+      'rake dispatch:repo_issues'
+    when 'metadata'
+      'rake dispatch:repo_metadata'
+    end
+  end
+
+  def write_execution(task)
+    `#{ssh_current} touch #{execution_path}`
+    bash_path = `#{ssh_current} which bash`
+    `#{ssh_current} echo "#{bash_path}" > #{execution_path}`
+    `#{ssh_current} echo "#{task}" >> #{execution_path}`
+    `#{ssh_current} chmod u=rwx #{execution_path}`
+  end
+
+  def running?
+    pid = `#{ssh_current} cat #{pidfile_dir}/*`.chomp
+    if `#{ssh_current} ps -fp #{pid}`.split("\n").count == 1
+      false
+    else
+      true
+    end
+  end
+
+  def user(ssh = true)
+    if ssh
+      `ssh #{@curr_node} echo $USER`.chomp
+    else
+      `echo $USER`.chomp
+    end
+  end
+
+  def ssh_current
+    "ssh #{@curr_node}"
+  end
+
+  def working_directory
+    "/home/#{user}/workspace/capstone"
+  end
+
+  def pidfile_dir
+    "#{working_directory}/.daemon_tasks/tmp"
+  end
+
+  def pidfile_path
+    pidfile = "#{execution_file}.pid"
+    "#{pidfile_dir}/#{pidfile}"
+  end
+
+  def new_pidfile
+    `#{ssh_current} mkdir #{pidfile_path} --parents`
+  end
+
+  def execution_dir
+    "#{working_directory}/.daemon_tasks/tasks"
+  end
+
+  def execution_file
+    "#{@curr_process}_scraper"
+  end
+
+  def execution_path
+    "#{execution_dir}/#{execution_file}"
+  end
+
+  def node_name
+    NODES[@curr_node]
+  end
+
+  def all_node_ids
+    (0..NODES.count).to_a
   end
 end
-
-# Will have to ssh this
-user = `echo $USER`.chomp
-
-working_directory = "/home/#{user}/workspace/capstone"
-
-pidfile_dir = FileUtils.mkpath("#{working_directory}/.daemon_tasks/tmp").first
-execution_dir = FileUtils.mkpath("#{working_directory}/.daemon_tasks/tasks").first
-
-#### TO HERE DONE
-
-command = ARGV[0]
-commands = ['start', 'stop', 'status']
-raise ArgumentError.new("Command must include #{commands}") unless commands.include?(command)
-
-process = ARGV[1]
-processes = ['commits', 'issues', 'metadata']
-raise ArgumentError.new("Command must include #{processes}") unless processes.include?(process)
-execution_file = "#{process}_scraper"
-pid_file = "#{execution_file}.pid"
-
-pidfile_path = "#{pidfile_dir}/#{pid_file}"
-execution_path = "#{execution_dir}/#{execution_file}"
-
-# Create pid file
-File.new("#{pidfile_path}", 'w+').close
-
-# Set rake task execution file
-task = case ARGV[1]
-       when 'commits'
-         'rake dispatch:repo_commits'
-       when 'issues'
-         'rake dispatch:repo_issues'
-       when 'metadata'
-         'rake dispatch:repo_metadata'
-       end
-
-File.open(execution_path, 'w+') do |f|
-  bash_path = `which bash`
-  f.puts "#!#{bash_path}"
-  f.puts task
-end
-FileUtils.chmod "u=wrx", execution_path
-
-execution = "start-stop-daemon -v --#{command}"
-execution += " -m --pidfile #{pidfile_path}"
-execution += " -u #{user} -d #{working_directory}"
-execution += " -b --exec #{execution_path}"
-
-`#{execution}`
-
-
-
-
-
-# `start-stop-daemon --start -m --pidfile /home/durendal/workspace/capstone/tmp/commits_scraper.pid -u durendal -d /home/durendal/workspace/capstone -b --startas /home/durendal/workspace/capstone/daemon_rake`

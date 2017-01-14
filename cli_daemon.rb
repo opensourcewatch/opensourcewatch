@@ -1,15 +1,10 @@
 # COMMANDS:
-# start: -s, --start
+# start: -s, --start=COMMAND
 # stop: -k, --kill
 # status: -t, --status
 # restart: -r, --restart
 # list_nodes: -l, --listnodes
 # help: --h, --help
-#
-# PROCESSES:
-# scrape commits: -c, --commits
-# scrape metadata: -m, --metadata
-# scrape issues: -i, --issues
 #
 # MATCHING OPTIONS:
 # -n, --node NODENUMBER
