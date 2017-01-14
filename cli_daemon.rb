@@ -14,6 +14,7 @@
 
 require 'optparse'
 require 'pry'
+require_relative './daemon_tasks'
 
 class DaemonInterface
   class ScriptOptions
@@ -129,14 +130,14 @@ class DaemonInterface
 
   def valid_process?
     process_opts = ['commits', 'issues', 'metadata']
-    start_option = @options.option[:start]
+    start_option = @options.options[:start]
     if !process_opts.include? start_option
       raise ArgumentError.new("PROCESS option must be one of the following: " + process_opts.to_s)
     end
   end
 
   def only_one_command?
-    if (@options.options.keys - @valid_commands).count != (@valid_commands.count - 1)
+    if !((@valid_commands - @options.options.keys).count == (@valid_commands.count - 1))
       raise ArgumentError.new("Only one command allowed at a time.")
     end
   end

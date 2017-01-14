@@ -1,5 +1,3 @@
-require 'fileutils'
-
 # Fix exceptions for 404 and 500
 
 class DaemonTasks
@@ -41,7 +39,6 @@ class DaemonTasks
       `execution`
     end
   end
-
 
   def kill
     @node_ids.each do |n|
