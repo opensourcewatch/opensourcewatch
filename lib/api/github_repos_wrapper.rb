@@ -1,9 +1,10 @@
 class GithubReposWrapper
-  @BASE_URL = 'https://api.github.com/repositories'
+  BASE_URL = 'https://api.github.com/repositories'
+  BATCHES_TO_MERGE = 10 # Each batch has 100 records (from githubs api), this says merge X batches per insert
+
   @access_token = ENV["GITHUB_API_KEY"]
   @stop_id = nil
   @repos = []
-  @BATCH_INSERT_SIZE = 10 # Each batch has 100 records (from githubs api), this says combine X batches per insert
 
   class << self
     # stop_id: compares the stop_id with next_id and doesn't make anymore
@@ -11,7 +12,7 @@ class GithubReposWrapper
     def paginate_repos(start_id: '0', stop_id: nil)
       @stop_id = stop_id.to_i if stop_id
       # Set initial kickoff url to paginate from
-      @current_url = @BASE_URL + query(start_id)
+      @current_url = BASE_URL + query(start_id)
       # Rate limiting
       loop do
         # Pagination
@@ -36,7 +37,7 @@ class GithubReposWrapper
         repos_batch = parse_repos
         @repos << repos_batch
 
-        create_repos if @repos.length >= @BATCH_INSERT_SIZE
+        create_repos if @repos.length >= BATCHES_TO_MERGE
 
         next_url =  @resp.headers['link'].split(',').first.split(';').first[/(?<=<).*(?=>)/]
         next_id = next_url.split('=').last.to_i
