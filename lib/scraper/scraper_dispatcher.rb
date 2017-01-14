@@ -1,72 +1,46 @@
+require_relative 'github_repo_scraper'
+require_relative '../redis/circular_redis_queue'
+require_relative '../redis/priority_queue'
+require_relative '../redis/redis_queue'
+
 class ScraperDispatcher
-  REDIS_ACTIVE_QUEUE_NAME = 'repositories'
-  REDIS_BLANK_QUEUE_NAME = 'blank_repositories'
+  # Dispatches scrapers to use various redis queues and scrape for different
+  # types of data
 
   @current_repo = nil
 
-  def self.scrape_metadata
-    repo_significance { GithubRepoScraper.update_repo_data([@current_repo]) }
-  end
-
-  def self.scrape_commits
-    repo_activity { GithubRepoScraper.commits(repositories: [@current_repo]) }
-  end
-
-  def self.scrape_issues
-    repo_activity { GithubRepoScraper.issues(repositories: [@current_repo]) }
-  end
-
-  def self.redis_requeue(queue_name: REDIS_ACTIVE_QUEUE_NAME, query: "stars > 10")
-    redis.del queue_name
-
-    start_time = Time.now
-    count = 0
-    redis.pipelined do
-      Repository.where(query).in_batches do |batch|
-        puts "Enqueuing #{queue_name}"
-        batch.each do |repo|
-          redis.rpush queue_name,{
-            id: repo.id,
-            url: repo.url
-          }.to_json
-        end
-        count += 1000
-        puts "#{count} repos enqueued"
-      end
+  def self.prioritized_repos_activity(enqueue: false, query: "stars > 10000", commits_on: true, issues_on: false)
+    queue = PriorityQueue.new(enqueue: enqueue, query: query)
+    scraper_handler(queue) do
+      GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
+      GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
     end
-    puts "#{redis.llen queue_name} were enqueued in #{((Time.now - start_time) / 60).round(2)} mins"
+  end
+
+  def self.repos_activity(enqueue: false, query: "stars > 10", commits_on: true, issues_on: false)
+    repos = Repository.where(query)
+    queue = CircularRedisQueue.new(repos, enqueue: enqueue)
+    scraper_handler(queue) do
+      GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
+      GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
+    end
+  end
+
+  def self.update_meta_data(enqueue: false, query: "stars IS_NULL")
+    repos = Repository.where(query)
+    queue = RedisQueue.new(repos, enqueue: enqueue)
+    # TODO: Debug and test the update repo data method on github scraper
+    scraper_handler(queue) { GithubRepoScraper.update_repo_data([@current_repo]) }
   end
 
   private
 
-  def self.redis
-    ip = ENV['REDIS_SERVER_IP']
-    pw = ENV['REDIS_SERVER_PW']
-
-    @redis ||= Redis.new(
-      host: ip,
-      password: pw
-    )
-  end
-
-  def self.next_active_repo
-    next_data = redis.lpop(REDIS_ACTIVE_QUEUE_NAME)
-    redis.rpush(REDIS_ACTIVE_QUEUE_NAME, next_data)
-    next_data
-  end
-
-  def self.next_blank_repo
-    redis.lpop(REDIS_BLANK_QUEUE_NAME)
-  end
-
-  # TODO: refactor ? repo_activity and repo significance are almost identical
-  def self.repo_activity
+  def self.scraper_handler(queue)
     start_time = Time.now
     scrape_count = 0
-    queue_length = redis.llen(REDIS_ACTIVE_QUEUE_NAME).to_i
 
     loop do
-      repo_data = JSON.parse(next_active_repo)
+      repo_data = queue.next
 
       @current_repo = Repository.find(repo_data['id'])
 
@@ -75,25 +49,9 @@ class ScraperDispatcher
       yield if block_given?
 
       scrape_count += 1
-      puts "Scraped #{scrape_count}/#{queue_length} in #{((Time.now - start_time) / 60).round(2)} mins"
-    end
-  end
-
-  def self.repo_significance
-    start_time = Time.now
-    scrape_count = 0
-    queue_length = redis.llen(REDIS_BLANK_QUEUE_NAME).to_i
-
-    loop do
-      repo_data = JSON.parse(next_blank_repo)
-
-      @current_repo = Repository.find(repo_data['id'])
-
-      puts "Scraping: #{repo_data['url']}"
-      yield if block_given?
-      puts "Scraped #{scrape_count} our of #{queue_length} in #{((Time.now - start_time) / 60).round(2)} mins"
-
-      scrape_count += 1
+      puts "Scraped #{scrape_count} in #{((Time.now - start_time) / 60).round(2)} mins"
     end
   end
 end
+
+binding.pry
