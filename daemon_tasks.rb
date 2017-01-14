@@ -1,5 +1,3 @@
-# Fix exceptions for 404 and 500
-
 class DaemonTasks
   NODES = [
     'durendal@138.197.20.199',
@@ -9,8 +7,7 @@ class DaemonTasks
 
   # nodes: by index of NODES. I.e. 0, 1, 2
   def initialize(node_ids = nil)
-    @node_ids = nodes_ids == :all ? all_node_ids : nodes
-    init_daemon_folder_structure
+    @node_ids = node_ids == :all ? all_node_ids : node_ids
   end
 
   def list_nodes
@@ -24,6 +21,7 @@ class DaemonTasks
   end
 
   def start(process)
+    init_daemon_folder_structure
     @curr_process = process
     new_pidfile(process)
     task = which_task(process)
@@ -43,6 +41,7 @@ class DaemonTasks
   def kill
     @node_ids.each do |n|
       @curr_node = n
+      puts "Node #{node_name} is not currently running."
       process = `#{ssh_current} ls #{execution_dir}`.chomp
       pid = `#{ssh_current} cat #{pidfile_dir}/*`.chomp
       output = `#{ssh_current} ps --ppid #{pid}`
@@ -73,7 +72,7 @@ class DaemonTasks
   private
 
   def init_daemon_folder_structure
-    @nodes_ids.each do |n|
+    @node_ids.each do |n|
       @curr_node = NODES[n]
 
       # --parents makes no errors thrown if extra folders need to be made
