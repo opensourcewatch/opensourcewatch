@@ -4,7 +4,7 @@ class Repository < ActiveRecord::Base
   include Comparable
 
   validates :github_id, uniqueness: true, on: :create
-  attr_protected :github_id, as: :update
+  attr_readonly :github_id
 
   has_many :commits
   has_many :issues
