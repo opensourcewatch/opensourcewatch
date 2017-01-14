@@ -23,9 +23,8 @@ class RedisQueue
 
         # Use the priority value as the initial score
         add(member)
-
-        puts "#{@repos.count} repos enqueued"
       end
+      puts "#{@repos.count} repos enqueued"
     end
   end
 
