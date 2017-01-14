@@ -3,9 +3,8 @@
 class Repository < ActiveRecord::Base
   include Comparable
 
-  # NOTE: Only necessary when new models are being added (as in via the API).
-  # NOTE: Github id should not change after creation
   validates :github_id, uniqueness: true, on: :create
+  attr_protected :github_id, as: :update
 
   has_many :commits
   has_many :issues
