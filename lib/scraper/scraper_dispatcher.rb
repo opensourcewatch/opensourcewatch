@@ -53,5 +53,3 @@ class ScraperDispatcher
     end
   end
 end
-
-binding.pry
