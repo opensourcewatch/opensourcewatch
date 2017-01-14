@@ -86,7 +86,7 @@ class GithubRepoScraper
 
           raw_comments.each do |raw_comment|
             comment_json = build_comment(raw_comment)
-            comment_json['issue_id'] = issue
+            comment_json['issue_id'] = issue.id
 
             issue_comment = IssueComment.create(comment_json)
             puts "Creating Issue Comment" if issue_comment
