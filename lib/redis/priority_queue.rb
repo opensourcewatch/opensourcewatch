@@ -21,7 +21,7 @@ class PriorityQueue
 
   def enqueue_redis(rescore)
     puts "Scoring and ordering..."
-    calculate_scores(@repos) if rescore
+    calculate_scores if rescore
     scored_repos = @repos.order(:score)
 
     puts "Creating prioritized queues..."
@@ -35,7 +35,7 @@ class PriorityQueue
 
     # Enqueue a sub queue for each priority level
     index = 0
-    tracked_repos.in_batches(of: bucket_size) do |batch|
+    tracked_repos.in_groups_of(bucket_size, false) do |batch|
       priority = PRIORITY_RANGE[index]
       queue_name = sub_queue_name(priority.to_s)
       index += 1
@@ -48,13 +48,11 @@ class PriorityQueue
   # For enqueing
   def calculate_scores
     count = 0
-    tracked_repos.in_batches do |batch|
-      batch.each do |repo|
-        repo.update_score
-        count += 1
-        puts "#{count} repos scored"
-      end
+    @repos.each do |repo|
+      repo.update_score
+      count += 1
     end
+    puts "#{count} repos scored"
   end
 
   # For operation
