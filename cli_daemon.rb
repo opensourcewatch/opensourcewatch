@@ -123,7 +123,7 @@ class DaemonInterface
   def check_input
     only_one_command?
     valid_process?
-    has_nodes_if_command?
+    has_nodes_if_executing_command?
     valid_nodes?
     @options
   end
@@ -162,7 +162,7 @@ class DaemonInterface
   end
 
   def executing_command?
-    @options.option.each do |opt|
+    @options.options.each do |opt|
       return true if executing_commands.include? opt
     end
     false
