@@ -131,7 +131,7 @@ class DaemonInterface
   def valid_process?
     process_opts = ['commits', 'issues', 'metadata']
     start_option = @options.options[:start]
-    if !process_opts.include? start_option
+    if start_option && !process_opts.include?(start_option)
       raise ArgumentError.new("PROCESS option must be one of the following: " + process_opts.to_s)
     end
   end
