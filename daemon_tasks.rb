@@ -7,7 +7,8 @@ class DaemonTasks
 
   # nodes: by index of NODES. I.e. 0, 1, 2
   def initialize(node_ids = nil)
-    @node_ids = node_ids == :all ? all_node_ids : node_ids
+    @node_ids = node_ids == 'all' ? all_node_ids : node_ids
+    binding.pry
   end
 
   def list_nodes
@@ -22,7 +23,6 @@ class DaemonTasks
 
   def start(process)
     init_daemon_folder_structure
-    @curr_process = process
     new_pidfile(process)
     task = which_task(process)
     write_execution(task)
@@ -61,7 +61,9 @@ class DaemonTasks
     all_node_ids.each do |n|
       @curr_node = n
       process = `#{ssh_current} ls #{execution_dir}`.chomp
-      if running?
+      if process.empty?
+        puts "NOT YET SET UP. Node #{node_name} has not even been set up to run yet."
+      elsif running?
         puts "RUNNING: Node #{node_name} with process #{process}."
       else
         puts "NOT RUNNING: Node #{node_name} should be running process #{process}."
@@ -73,9 +75,10 @@ class DaemonTasks
 
   def init_daemon_folder_structure
     @node_ids.each do |n|
-      @curr_node = NODES[n]
+      @curr_node = n
 
       # --parents makes no errors thrown if extra folders need to be made
+      binding.pry
       `#{ssh_current} mkdir #{pidfile_dir} --parents`
       `#{ssh_current} mkdir #{execution_dir} --parents`
     end
@@ -111,14 +114,14 @@ class DaemonTasks
 
   def user(ssh = true)
     if ssh
-      `ssh #{@curr_node} echo $USER`.chomp
+      `ssh #{node_name} echo $USER`.chomp
     else
       `echo $USER`.chomp
     end
   end
 
   def ssh_current
-    "ssh #{@curr_node}"
+    "ssh #{node_name}"
   end
 
   def working_directory

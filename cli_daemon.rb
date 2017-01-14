@@ -77,7 +77,7 @@ class DaemonInterface
       parser.on('-n', '--nodes=NODE(S)', Array,
                 'Specify the node(s), by ID, you wish to act on. Ex: -n 1,3,4'
                 ) do |n|
-        self.options[:nodes] = n
+        self.options[:nodes] = n == 'all' ? ['all'] : n.map(&:to_i)
       end
     end
   end
@@ -144,7 +144,7 @@ class DaemonInterface
 
   def valid_nodes?
     nodes = @options.options[:nodes]
-    allowed_nodes = DaemonTasks::NODES + ['all']
+    allowed_nodes = (0...DaemonTasks::NODES.count).to_a + ['all']
     if nodes
       nodes.each do |arg_node|
         if !allowed_nodes.include?(arg_node)
