@@ -145,10 +145,12 @@ class DaemonInterface
   def valid_nodes?
     nodes = @options.options[:nodes]
     allowed_nodes = DaemonTasks::NODES + ['all']
-    nodes.each do |arg_node|
-      if !allowed_nodes.include?(arg_node)
-        # change this to InvalidNodeError
-        raise ArgumentError.new('Invalid node. Must be one of ' + allowed_nodes.to_s)
+    if nodes
+      nodes.each do |arg_node|
+        if !allowed_nodes.include?(arg_node)
+          # change this to InvalidNodeError
+          raise ArgumentError.new('Invalid node. Must be one of ' + allowed_nodes.to_s)
+        end
       end
     end
   end
