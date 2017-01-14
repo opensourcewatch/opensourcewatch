@@ -2,17 +2,26 @@ require_relative './noko_doc'
 
 # Scrapes data for Repositories and Users on Github.com
 class GithubRepoScraper
+  SECONDS_BETWEEN_REQUESTS = 0
+  BASE_URL = "https://github.com"
+
   @github_doc = NokoDoc.new
   @current_repo = nil
-  SECONDS_BETWEEN_REQUESTS = 0
-  @BASE_URL = "https://github.com"
+  
   @commits_created_this_session = 0
   @start_time = Time.now
 
+  # TODO: Investigate and add error handling for 404/500 from github so the error
+  # is logged but doesn't just crash
   # TODO: add check so that these methods don't necessarily take and active record
   # model, because we don't want to hit the db everytime in the dispatcher
   # TODO: we could pass in a shallow repository model and only actually find the model
   # if we need to associate a commit, or actually do an update etc.
+  # TODO: We should probably check yesterdays commits when we scrape commits to
+  # make sure we didn’t miss any. There is a chance that in the last 8 hours of
+  # the day, if there is a commit we won’t get it.
+  # TODO: Add a column for the *day* the commits were pushed to github and modify
+  # the scraper to get this data
   class << self
     # Gets the following:
     # - number of stars the project has
@@ -161,6 +170,7 @@ class GithubRepoScraper
     end
 
     def update_repo_meta(get_readme = false)
+      # TODO: this isn't working rigt now... fix so we grab the readme
       if get_readme
         readme_content = repo_readme_content
       else
