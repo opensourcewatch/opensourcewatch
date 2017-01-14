@@ -164,7 +164,6 @@ class GithubRepoScraper
       @current_repo = repo
       # TODO: consider making a psuedo object to pass around
       doc_path = @current_repo.url + path
-      binding.pry
 
       return @github_doc.new_doc(doc_path)
     end
