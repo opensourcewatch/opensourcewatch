@@ -12,18 +12,20 @@ class RedisQueue
   def enqueue_redis
     # Insert into redis. The left side of the queue is the high side
     @redis.pipelined do
-      @repos.each do |repo|
-        # Must be a string
-        member = {
-          name: repo.name,
-          id: repo.id,
-          url: repo.url,
-        }.to_json
+      @repos.in_batches do |batch|
+        batch.each do |repo|
+          # Must be a string
+          member = {
+            name: repo.name,
+            id: repo.id,
+            url: repo.url,
+          }.to_json
 
-        # Use the priority value as the initial score
-        add(member)
+          # Use the priority value as the initial score
+          add(member)
+        end
+        puts "#{batch.count} repos enqueued."
       end
-      puts "#{@repos.count} repos enqueued."
     end
   end
 
