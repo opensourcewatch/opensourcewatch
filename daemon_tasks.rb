@@ -26,16 +26,16 @@ class DaemonTasks
     init_daemon_folder_structure
     ensure_pidfile
     task = which_task
-    write_execution(task)
+    write_task_script(task)
 
     @node_ids.each do |n|
       @curr_node = n
       execution = ssh_current
-      execution += " start-stop-daemon -v --start"
+      execution += " \"start-stop-daemon -v --start"
       execution += " -m --pidfile #{pidfile_path}"
       execution += " -u #{user} -d #{working_directory}"
-      execution += " -b --exec #{execution_path}"
-      `#{execution}`
+      execution += " -b --startas #{execution_path}\""
+      puts `#{execution}`
     end
   end
 
@@ -95,7 +95,7 @@ class DaemonTasks
     end
   end
 
-  def write_execution(task)
+  def write_task_script(task)
     `#{ssh_current} touch #{execution_path}`
     bash_path = `#{ssh_current} which bash`
     `#{ssh_current} 'echo "#!#{bash_path}" > #{execution_path}'`
