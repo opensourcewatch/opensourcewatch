@@ -1,8 +1,7 @@
 class DaemonTasks
   NODES = [
     'durendal@138.197.20.199',
-    'gungnir@45.55.222.220',
-    'migl@104.236.81.65'
+    'gungnir@45.55.222.220'
   ]
 
   # nodes: by index of NODES. I.e. 0, 1, 2
@@ -22,13 +21,19 @@ class DaemonTasks
 
   def start(process)
     @curr_process = process
-    init_daemon_folder_structure
-    ensure_pidfile
-    task = which_task
-    write_task_script(task)
 
     @node_ids.each do |n|
       @curr_node = n
+      if running?
+        puts "Node #{node_name} is currently running"
+        next
+      end
+
+      init_daemon_folder_structure
+      ensure_pidfile
+      task = which_task
+      write_task_script(task)
+
       execution = ssh_current
       execution += " \"start-stop-daemon -v --start"
       execution += " -m --pidfile #{pidfile_path}"
@@ -44,7 +49,7 @@ class DaemonTasks
       @curr_node = n
       if !running?
         puts "Node #{node_name} is not currently running."
-        break
+        next
       end
       process = `#{ssh_current} ls #{execution_dir}`.chomp
       pid = `#{ssh_current} cat #{pidfile_dir}/*`.chomp
@@ -96,13 +101,9 @@ class DaemonTasks
   private
 
   def init_daemon_folder_structure
-    @node_ids.each do |n|
-      @curr_node = n
-
-      # --parents makes no errors thrown if extra folders need to be made
-      `#{ssh_current} mkdir #{pidfile_dir} --parents`
-      `#{ssh_current} mkdir #{execution_dir} --parents`
-    end
+    # --parents makes no errors thrown if extra folders need to be made
+    `#{ssh_current} mkdir #{pidfile_dir} --parents`
+    `#{ssh_current} mkdir #{execution_dir} --parents`
   end
 
   def which_task
