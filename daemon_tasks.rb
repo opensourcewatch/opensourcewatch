@@ -21,7 +21,7 @@ class DaemonTasks
   end
 
   def start(process)
-    # Need a clear_files method
+    # Need a clear_task_files method
     # - needs to happen before start
     # - and after kill ?
     @curr_process = process
@@ -39,12 +39,13 @@ class DaemonTasks
       execution += " -b --startas #{execution_path}\""
       puts `#{execution}`
     end
+    status
   end
 
   def kill
     @node_ids.each do |n|
       @curr_node = n
-      if !running
+      if !running?
         puts "Node #{node_name} is not currently running."
         break
       end
@@ -53,8 +54,10 @@ class DaemonTasks
       output = `#{ssh_current} ps --ppid #{pid}`
       ppid = output.split("\n")[1].strip[/^[0-9]+/]
       `#{ssh_current} kill #{ppid}`
+      clear_node_task_files
       puts "Process #{process} killed on #{node_name}"
     end
+    status
   end
 
   def restart
@@ -66,14 +69,21 @@ class DaemonTasks
     all_node_ids.each do |n|
       @curr_node = n
       puts "#{n}:"
-      process = `#{ssh_current} "ls #{execution_dir}"`.chomp
-      msg = if process.empty?
-        "NOT YET SET UP. Node #{node_name} has not even been set up to run yet."
-      elsif running?
-        "RUNNING: Node #{node_name} with process #{process}."
-      else
-        "NOT RUNNING: Node #{node_name} should be running process #{process}."
+      daemon_struct = `#{ssh_current} "ls -a #{working_directory}"`.include?('.daemon_tasks')
+      unless daemon_struct
+        puts "\tNOT YET SET UP. Node #{node_name} has not even been set up to run yet."
+        puts
+        next
       end
+
+      process = `#{ssh_current} "ls #{execution_dir}"`.chomp
+      msg = if running?
+              "RUNNING: Node #{node_name} with process #{process}."
+            elsif !running? && !process.empty?
+              "SHOULD BE RUNNING: Node #{node_name} should be running process #{process}."
+            else
+              "NOT RUNNING: Node #{node_name} is currently waiting for a job."
+            end
       puts "\t" + msg
       puts
     end
@@ -125,6 +135,11 @@ class DaemonTasks
     else
       `echo $USER`.chomp
     end
+  end
+
+  def clear_node_task_files
+    task_files = `#{ssh_current} ls #{execution_dir}/`.split("\n")
+    task_files.each { |f| `#{ssh_current} rm #{execution_dir}/#{f}`}
   end
 
   def ssh_current
