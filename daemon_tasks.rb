@@ -21,9 +21,6 @@ class DaemonTasks
   end
 
   def start(process)
-    # Need a clear_task_files method
-    # - needs to happen before start
-    # - and after kill ?
     @curr_process = process
     init_daemon_folder_structure
     ensure_pidfile

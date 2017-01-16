@@ -39,7 +39,7 @@ class DaemonInterface
       parser.on('-s', '--start=PROCESS',
                 'Attempts to start executing the process on specified nodes. Options: commits, issues, metadata.'
                ) do |s|
-        self.options[:start] = s
+        self.options[:start] = s.downcase
       end
     end
 
@@ -77,7 +77,7 @@ class DaemonInterface
       parser.on('-n', '--nodes=NODE(S)', Array,
                 'Specify the node(s), by ID, you wish to act on. Ex: -n 1,3,4'
                 ) do |n|
-        self.options[:nodes] = n == 'all' ? ['all'] : n.map(&:to_i)
+        self.options[:nodes] = n.downcase == 'all' ? ['all'] : n.map(&:to_i)
       end
     end
   end
