@@ -66,9 +66,16 @@ class DaemonTasks
     all_node_ids.each do |n|
       @curr_node = n
       puts "#{n}:"
-      daemon_struct = `#{ssh_current} "ls -a #{working_directory}"`.include?('.daemon_tasks')
-      unless daemon_struct
+      has_no_working_directory = `#{ssh_current} "ls #{working_directory}"`.empty?
+      if has_no_working_directory
         puts "\tNOT YET SET UP. Node #{node_name} has not even been set up to run yet."
+        puts
+        next
+      end
+
+      daemon_struct = `#{ssh_current} "ls -a #{working_directory}"`.include?('.daemon_tasks')
+      if !daemon_struct
+        puts "\tNEVER BEEN RUN. Node #{node_name} has never been run."
         puts
         next
       end
