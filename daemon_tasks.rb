@@ -22,6 +22,8 @@ class DaemonTasks
 
   def start(process)
     # Need a clear_files method
+    # - needs to happen before start
+    # - and after kill ?
     @curr_process = process
     init_daemon_folder_structure
     ensure_pidfile
@@ -158,6 +160,6 @@ class DaemonTasks
   end
 
   def all_node_ids
-    (0..NODES.count).to_a
+    (0...NODES.count).to_a
   end
 end
