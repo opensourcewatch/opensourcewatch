@@ -44,13 +44,15 @@ class DaemonTasks
   def kill
     @node_ids.each do |n|
       @curr_node = n
-      puts "Node #{node_name} is not currently running."
+      if !running
+        puts "Node #{node_name} is not currently running."
+        break
+      end
       process = `#{ssh_current} ls #{execution_dir}`.chomp
       pid = `#{ssh_current} cat #{pidfile_dir}/*`.chomp
       output = `#{ssh_current} ps --ppid #{pid}`
       ppid = output.split("\n")[1].strip[/^[0-9]+/]
       `#{ssh_current} kill #{ppid}`
-      `#{ssh_current} kill #{pid}`
       puts "Process #{process} killed on #{node_name}"
     end
   end
