@@ -63,14 +63,17 @@ class DaemonTasks
   def status
     all_node_ids.each do |n|
       @curr_node = n
-      process = `#{ssh_current} ls #{execution_dir}`.chomp
-      if process.empty?
-        puts "NOT YET SET UP. Node #{node_name} has not even been set up to run yet."
+      puts "#{n}:"
+      process = `#{ssh_current} "ls #{execution_dir}"`.chomp
+      msg = if process.empty?
+        "NOT YET SET UP. Node #{node_name} has not even been set up to run yet."
       elsif running?
-        puts "RUNNING: Node #{node_name} with process #{process}."
+        "RUNNING: Node #{node_name} with process #{process}."
       else
-        puts "NOT RUNNING: Node #{node_name} should be running process #{process}."
+        "NOT RUNNING: Node #{node_name} should be running process #{process}."
       end
+      puts "\t" + msg
+      puts
     end
   end
 
@@ -116,7 +119,7 @@ class DaemonTasks
 
   def user(ssh = true)
     if ssh
-      `ssh #{node_name} echo $USER`.chomp
+      node_name.split('@').first
     else
       `echo $USER`.chomp
     end
