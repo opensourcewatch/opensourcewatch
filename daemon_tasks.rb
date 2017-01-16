@@ -7,7 +7,7 @@ class DaemonTasks
 
   # nodes: by index of NODES. I.e. 0, 1, 2
   def initialize(node_ids = nil)
-    @node_ids = node_ids == 'all' ? all_node_ids : node_ids
+    @node_ids = node_ids == ['all'] ? all_node_ids : node_ids
   end
 
   def list_nodes
