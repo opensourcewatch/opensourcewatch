@@ -69,7 +69,8 @@ class DaemonTasks
   end
 
   def status
-    all_node_ids.each do |n|
+    nodes = @node_ids || all_node_ids
+    nodes.each do |n|
       @curr_node = n
       puts "#{n}:"
       has_no_working_directory = `#{ssh_current} "ls #{working_directory}"`.empty?
