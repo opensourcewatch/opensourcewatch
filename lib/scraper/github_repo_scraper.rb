@@ -204,7 +204,7 @@ class GithubRepoScraper
     def fetch_commit_data
       @github_doc.doc.css('.commit').each do |commit_info|
         commit_date = Time.parse(commit_info.css('relative-time')[0][:datetime])
-        throw :recent_commits_finished unless commit_date.today?
+        throw :recent_commits_finished unless commit_date.to_date >= last_years_time # for today: commit_date.today?
 
         # Not all avatars are users
         user_anchor = commit_info.css('.commit-avatar-cell a')[0]
@@ -239,6 +239,10 @@ class GithubRepoScraper
 
         throw :scrape_limit_reached if User.count >= @user_limit
       end
+    end
+
+    def last_years_time
+      DateTime.now - 365
     end
 
     def repo_readme_content
