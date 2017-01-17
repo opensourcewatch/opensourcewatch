@@ -64,7 +64,7 @@ class GithubRepoScraper
           next_url_anchor = @github_doc.doc.css("a.next_page")
           if next_url_anchor.present?
             next_url_rel_path = next_url_anchor.attribute("href").value
-            @github_doc.new_doc(@BASE_URL + next_url_rel_path)
+            break unless @github_doc.new_doc(@BASE_URL + next_url_rel_path)
           else
             break
           end
@@ -73,7 +73,7 @@ class GithubRepoScraper
         # Get all the comments for each issue
         issues.each do |issue|
           doc_path = @BASE_URL + issue.url
-          @github_doc.new_doc(doc_path)
+          next unless @github_doc.new_doc(doc_path)
 
           raw_comments = @github_doc.doc.css("div.timeline-comment-wrapper")
 
