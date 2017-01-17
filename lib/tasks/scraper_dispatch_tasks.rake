@@ -8,18 +8,18 @@ namespace :dispatch do
     ScraperDispatcher.scrape(queue_name: "prioritized_repositories")
   end
 
-  task :commits => :environment do |t|
+  task :scrape_commits => :environment do |t|
     puts "Dispatching commits scraping pathway..."
-    ScraperDispatcher.scrape
+    ScraperDispatcher.scrape_commits
   end
 
-  task :issues => :environment do |t|
+  task :scrape_issues => :environment do |t|
     puts "Dispatching commits and issues scraping pathway..."
-    ScraperDispatcher.scrape(commits_on: false, issues_on: true)
+    ScraperDispatcher.scrape_issues
   end
 
-  task :metadata => :environment do |t|
+  task :scrape_metadata => :environment do |t|
     puts "Dispatching agent to work on blank repositories scraping metadata..."
-    ScraperDispatcher.scrape(queue_name: 'blank_repositories')
+    ScraperDispatcher.scrape_metadata
   end
 end

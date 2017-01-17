@@ -64,7 +64,7 @@ class GithubRepoScraper
           next_url_anchor = @github_doc.doc.css("a.next_page")
           if next_url_anchor.present?
             next_url_rel_path = next_url_anchor.attribute("href").value
-            @github_doc.new_doc(@BASE_URL + next_url_rel_path)
+            break unless @github_doc.new_doc(@BASE_URL + next_url_rel_path)
           else
             break
           end
@@ -73,7 +73,7 @@ class GithubRepoScraper
         # Get all the comments for each issue
         issues.each do |issue|
           doc_path = @BASE_URL + issue.url
-          @github_doc.new_doc(doc_path)
+          next unless @github_doc.new_doc(doc_path)
 
           raw_comments = @github_doc.doc.css("div.timeline-comment-wrapper")
 
@@ -204,7 +204,7 @@ class GithubRepoScraper
     def fetch_commit_data
       @github_doc.doc.css('.commit').each do |commit_info|
         commit_date = Time.parse(commit_info.css('relative-time')[0][:datetime])
-        throw :recent_commits_finished unless commit_date.today?
+        throw :recent_commits_finished unless commit_date.to_date >= last_years_time # for today: commit_date.today?
 
         # Not all avatars are users
         user_anchor = commit_info.css('.commit-avatar-cell a')[0]
@@ -239,6 +239,10 @@ class GithubRepoScraper
 
         throw :scrape_limit_reached if User.count >= @user_limit
       end
+    end
+
+    def last_years_time
+      DateTime.now - 365
     end
 
     def repo_readme_content

@@ -1,7 +1,8 @@
 class DaemonTasks
   NODES = [
-    'durendal@138.197.20.199',
-    'gungnir@45.55.222.220'
+    ENV["DURENDAL_NODE"],
+    ENV["GUNGNIR_NODE"],
+    ENV["MIGL_NODE"]
   ]
 
   # nodes: by index of NODES. I.e. 0, 1, 2
@@ -64,11 +65,12 @@ class DaemonTasks
 
   def restart
     kill
-    # start('all')
+    start('all')
   end
 
   def status
-    all_node_ids.each do |n|
+    nodes = @node_ids || all_node_ids
+    nodes.each do |n|
       @curr_node = n
       puts "#{n}:"
       has_no_working_directory = `#{ssh_current} "ls #{working_directory}"`.empty?
@@ -109,11 +111,11 @@ class DaemonTasks
   def which_task
     case @curr_process
     when 'commits'
-      'rake dispatch:repo_commits'
+      'rake dispatch:scrape_commits'
     when 'issues'
-      'rake dispatch:repo_issues'
+      'rake dispatch:scrape_issues'
     when 'metadata'
-      'rake dispatch:repo_metadata'
+      'rake dispatch:scrape_metadata'
     end
   end
 
@@ -143,6 +145,7 @@ class DaemonTasks
   end
 
   def clear_node_task_files
+    # TODO: make sure this works
     task_files = `#{ssh_current} ls #{execution_dir}/`.split("\n")
     task_files.each { |f| `#{ssh_current} rm #{execution_dir}/#{f}`}
   end

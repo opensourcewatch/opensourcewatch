@@ -7,7 +7,7 @@ require_relative '../redis/redis_queue'
 class ScraperDispatcher
   # Dispatches scrapers to use various redis queues and scrape for different
   # types of data
-  
+
   # TODO: delegate_queue to condense the number of methods between queues
   # TODO: push down or move where enqueue is done
 
@@ -29,7 +29,7 @@ class ScraperDispatcher
       GithubRepoScraper.commits(repositories: [@current_repo])
     end
   end
-    
+
   def self.scrape_issues(enqueue: false, query: "stars > 10")
     @log_manager = LogManager.new('issues')
     repos = Repository.where(query) if enqueue
@@ -66,10 +66,11 @@ class ScraperDispatcher
         @log_manager.last_activity_log =
           "Last URL Scraped: #{repo_data['url']}.\n" +
           "Scraped #{scrape_count} in #{time_scraping(start_time)}."
+        puts @log_manager.last_activity_log
       end
     end
   end
-  
+
   def self.time_scraping(start_time)
     "#{((Time.now - start_time) / 60).round(2)} mins"
   end
