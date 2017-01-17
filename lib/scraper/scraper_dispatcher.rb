@@ -4,7 +4,6 @@ require_relative '../redis/circular_redis_queue'
 require_relative '../redis/priority_queue'
 require_relative '../redis/redis_queue'
 
-require 'pry'
 class ScraperDispatcher
   # Dispatches scrapers to use various redis queues and scrape for different
   # types of data
@@ -51,7 +50,7 @@ class ScraperDispatcher
   def self.scrape_once(enqueue: false, query: "stars > 10")
     @log_manager = LogManager.new('commits')
     repos = Repository.where("stars > 10") if enqueue
-    queue = RedisQueue.new(repos, enqueue: enqueue) if enqueue
+    queue = RedisQueue.new(repos, enqueue: enqueue) 
 
     scraper_handler(queue) do
       GithubRepoScraper.commits(repositories: [@current_repo])
@@ -86,5 +85,3 @@ class ScraperDispatcher
     "#{((Time.now - start_time) / 60).round(2)} mins"
   end
 end
-
-binding.pry
