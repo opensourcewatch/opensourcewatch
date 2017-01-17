@@ -23,6 +23,9 @@ gem 'activerecord-import'
 gem 'json'
 gem 'therubyracer'
 
+# JS Runtime
+gem 'therubyracer'
+
 # Better search
 gem 'elasticsearch-model'
 gem 'elasticsearch-rails'

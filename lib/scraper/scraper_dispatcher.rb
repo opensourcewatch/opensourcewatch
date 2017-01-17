@@ -1,72 +1,64 @@
 require_relative '../log_manager/log_manager'
+require_relative 'github_repo_scraper'
+require_relative '../redis/circular_redis_queue'
+require_relative '../redis/priority_queue'
+require_relative '../redis/redis_queue'
 
 class ScraperDispatcher
-  REDIS_ACTIVE_QUEUE_NAME = 'repositories'
-  REDIS_BLANK_QUEUE_NAME = 'blank_repositories'
+  # Dispatches scrapers to use various redis queues and scrape for different
+  # types of data
+  
+  # TODO: delegate_queue to condense the number of methods between queues
+  # TODO: push down or move where enqueue is done
 
   @current_repo = nil
-  @current_action = nil
 
-  def self.redis_requeue(queue_name: REDIS_ACTIVE_QUEUE_NAME, query: "stars > 10")
-    redis.del queue_name
-
-    start_time = Time.now
-    count = 0
-    redis.pipelined do
-      Repository.where(query).in_batches do |batch|
-        puts "Enqueuing #{queue_name}"
-        batch.each do |repo|
-          redis.rpush queue_name,{
-            id: repo.id,
-            url: repo.url
-          }.to_json
-        end
-        count += 1000
-        puts "#{count} repos enqueued"
-      end
+  def self.prioritized_repos_activity(enqueue: false, query: "stars > 10000", commits_on: true, issues_on: false)
+    queue = PriorityQueue.new(enqueue: enqueue, query: query)
+    scraper_handler(queue) do
+      GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
+      GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
     end
-    puts "#{redis.llen queue_name} were enqueued in #{((Time.now - start_time) / 60).round(2)} mins"
   end
 
-
-  def self.scrape_metadata
-    @log_manager = LogManager.new('metadata')
-    repo_activity { GithubRepoScraper.update_repo_data([@current_repo]) }
-  end
-
-  def self.scrape_commits
+  def self.scrape_commits(enqueue: false, query: "stars > 10")
     @log_manager = LogManager.new('commits')
-    repo_activity { GithubRepoScraper.commits(repositories: [@current_repo]) }
+    repos = Repository.where(query) if enqueue
+    queue = CircularRedisQueue.new(repos, enqueue: enqueue)
+    scraper_handler(queue) do
+      GithubRepoScraper.commits(repositories: [@current_repo])
+    end
+  end
+    
+  def self.scrape_issues(enqueue: false, query: "stars > 10")
+    @log_manager = LogManager.new('issues')
+    repos = Repository.where(query) if enqueue
+    queue = CircularRedisQueue.new(repos, enqueue: enqueue)
+    scraper_handler(queue)  do
+      GithubRepoScraper.issues(repositories: [@current_repo])
+    end
   end
 
-  def self.scrape_issues
-    @log_manager = LogManager.new('issues')
-    repo_activity { GithubRepoScraper.issues(repositories: [@current_repo]) }
+  def self.update_meta_data(enqueue: false, query: "stars IS_NULL")
+    @log_manager = LogManager.new('metadata')
+    repos = Repository.where(query) if enqueue
+    queue = RedisQueue.new(repos, enqueue: enqueue)
+    # TODO: Debug and test the update repo data method on github scraper
+    scraper_handler(queue) { GithubRepoScraper.update_repo_data([@current_repo]) }
   end
 
   private
 
-  def self.redis
-    ip = ENV['REDIS_SERVER_IP']
-    pw = ENV['REDIS_SERVER_PW']
-
-    @redis ||= Redis.new(
-      host: ip,
-      password: pw
-    )
-  end
-
-  def self.time_scraping(start_time)
-    "#{((Time.now - start_time) / 60).round(2)} mins"
-  end
-
-  def self.repo_activity
-    scrape_count = 0
+  def self.scraper_handler(queue)
     start_time = Time.now
+    scrape_count = 0
     @log_manager.log_scraping do
       loop do
-        repo_data = JSON.parse(next_repo)
+        repo_data = queue.next
+
         @current_repo = Repository.find(repo_data['id'])
+
+        puts "Scraping: #{repo_data['url']}"
 
         yield if block_given?
 
@@ -77,15 +69,8 @@ class ScraperDispatcher
       end
     end
   end
-
-  def self.next_repo
-    if @log_manager.current_activity == 'metadata'
-      queue = REDIS_BLANK_QUEUE_NAME
-    else
-      queue = REDIS_ACTIVE_QUEUE_NAME
-    end
-    next_data = redis.lpop(queue)
-    redis.rpush(queue, next_data)
-    next_data
+  
+  def self.time_scraping(start_time)
+    "#{((Time.now - start_time) / 60).round(2)} mins"
   end
 end
