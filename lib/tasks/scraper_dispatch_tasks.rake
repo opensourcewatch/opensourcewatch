@@ -22,4 +22,9 @@ namespace :dispatch do
     puts "Dispatching agent to work on blank repositories scraping metadata..."
     ScraperDispatcher.scrape_metadata
   end
+
+  task :scrape_once => :environment do |t|
+    puts "Dispatching priority commits scraping pathway..."
+    ScraperDispatcher.scrape_once
+  end
 end
