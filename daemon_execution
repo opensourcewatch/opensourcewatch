@@ -1,2 +1,0 @@
-#!/bin/bash
- "start-stop-daemon -v --start -m --pidfile /home/durendal/workspace/capstone/.daemon_tasks/tmp/commits_scraper.pid -u durendal -d /home/durendal/workspace/capstone -b --exec /home/durendal/workspace/capstone/.daemon_tasks/tasks/commits_scraper"
