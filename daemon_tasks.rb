@@ -1,8 +1,8 @@
 class DaemonTasks
   NODES = [
-    'durendal@138.197.20.199',
-    'gungnir@45.55.222.220',
-    'migl@104.236.102.189'
+    ENV[:DURENDAL_NODE],
+    ENV[:GUNGNIR_NODE],
+    ENV[:MIGL_NODE]
   ]
 
   # nodes: by index of NODES. I.e. 0, 1, 2
@@ -34,14 +34,12 @@ class DaemonTasks
       ensure_pidfile
       task = which_task
       write_task_script(task)
-      binding.pry
 
       execution = ssh_current
       execution += " \"start-stop-daemon -v --start"
       execution += " -m --pidfile #{pidfile_path}"
       execution += " -u #{user} -d #{working_directory}"
       execution += " -b --startas #{execution_path}\""
-      binding.pry
       puts `#{execution}`
     end
     status
