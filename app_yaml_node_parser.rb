@@ -10,6 +10,7 @@ lines.each do |l|
   key = yaml_hash.keys[0]
   value = yaml_hash[key]
   if key.end_with? '_NODE'
-    `echo "export #{key}=#{value}" >> ~/.bashrc; source ~/.bashrc`
+    `echo "export #{key}=#{value}" >> ~/.bashrc`
   end
 end
+`source ~/.bashrc`

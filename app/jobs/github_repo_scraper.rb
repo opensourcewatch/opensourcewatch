@@ -213,7 +213,9 @@ class GithubRepoScraper
 
     def fetch_commit_data
       @github_doc.doc.css('.commit').each do |commit_info|
-        commit_date = Time.parse(commit_info.css('relative-time')[0][:datetime])
+        relative_time = commit_info.css('relative-time')
+        next if relative_time.empty?
+        commit_date = Time.parse(relative_time[0][:datetime])
         throw :recent_commits_finished unless commit_date.to_date >= last_years_time # for today: commit_date.today?
 
         # Not all avatars are users

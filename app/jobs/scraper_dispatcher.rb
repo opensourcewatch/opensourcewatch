@@ -52,7 +52,7 @@ class ScraperDispatcher
   def self.scrape_once(enqueue: false, query: "stars > 10")
     @log_manager = LogManager.new('commits')
     repos = Repository.where("stars > 10") if enqueue
-    queue = RedisQueue.new(repos, enqueue: enqueue) if enqueue
+    queue = RedisQueue.new(repos, enqueue: enqueue) 
 
     scraper_handler(queue) do
       GithubRepoScraper.commits(repositories: [@current_repo])

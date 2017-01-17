@@ -37,7 +37,7 @@ class DaemonInterface
 
     def start_executing_command_option(parser)
       parser.on('-s', '--start=PROCESS',
-                'Attempts to start executing the process on specified nodes. Options: commits, issues, metadata.'
+                'Attempts to start executing the process on specified nodes. Options: commits, issues, metadata, scrape_once.'
                ) do |s|
         self.options[:start] = s.downcase
       end
