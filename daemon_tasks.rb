@@ -109,11 +109,11 @@ class DaemonTasks
   def which_task
     case @curr_process
     when 'commits'
-      'rake dispatch:repo_commits'
+      'rake dispatch:scrape_commits'
     when 'issues'
-      'rake dispatch:repo_issues'
+      'rake dispatch:scrape_issues'
     when 'metadata'
-      'rake dispatch:repo_metadata'
+      'rake dispatch:scrape_metadata'
     end
   end
 
