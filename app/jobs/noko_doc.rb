@@ -1,6 +1,5 @@
-require 'nokogiri'
 require 'open-uri'
-require 'httplog'
+
 # Github_Doc is a class that manages the state of
 # a Nokogiri html document to be parsed. It also takes care
 # of the error handling with connections started by Nokogiri

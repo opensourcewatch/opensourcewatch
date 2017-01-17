@@ -1,18 +1,25 @@
-require_relative './noko_doc'
-
 # Scrapes data for Repositories and Users on Github.com
 class GithubRepoScraper
+  SECONDS_BETWEEN_REQUESTS = 0
+  BASE_URL = "https://github.com"
+
   @github_doc = NokoDoc.new
   @current_repo = nil
-  SECONDS_BETWEEN_REQUESTS = 0
-  @BASE_URL = "https://github.com"
+
   @commits_created_this_session = 0
   @start_time = Time.now
 
+  # TODO: Investigate and add error handling for 404/500 from github so the error
+  # is logged but doesn't just crash
   # TODO: add check so that these methods don't necessarily take and active record
   # model, because we don't want to hit the db everytime in the dispatcher
   # TODO: we could pass in a shallow repository model and only actually find the model
   # if we need to associate a commit, or actually do an update etc.
+  # TODO: We should probably check yesterdays commits when we scrape commits to
+  # make sure we didn’t miss any. There is a chance that in the last 8 hours of
+  # the day, if there is a commit we won’t get it.
+  # TODO: Add a column for the *day* the commits were pushed to github and modify
+  # the scraper to get this data
   class << self
     # Gets the following:
     # - number of stars the project has
@@ -64,7 +71,8 @@ class GithubRepoScraper
           next_url_anchor = @github_doc.doc.css("a.next_page")
           if next_url_anchor.present?
             next_url_rel_path = next_url_anchor.attribute("href").value
-            break unless @github_doc.new_doc(@BASE_URL + next_url_rel_path)
+
+            break unless @github_doc.new_doc(BASE_URL + next_url_rel_path)
           else
             break
           end
@@ -72,14 +80,14 @@ class GithubRepoScraper
 
         # Get all the comments for each issue
         issues.each do |issue|
-          doc_path = @BASE_URL + issue.url
+          doc_path = BASE_URL + issue.url
           next unless @github_doc.new_doc(doc_path)
 
           raw_comments = @github_doc.doc.css("div.timeline-comment-wrapper")
 
           raw_comments.each do |raw_comment|
             comment_json = build_comment(raw_comment)
-            comment_json['issue_id'] = issue
+            comment_json['issue_id'] = issue.id
 
             issue_comment = IssueComment.create(comment_json)
             puts "Creating Issue Comment" if issue_comment
@@ -157,10 +165,12 @@ class GithubRepoScraper
       @current_repo = repo
       # TODO: consider making a psuedo object to pass around
       doc_path = @current_repo.url + path
+
       return @github_doc.new_doc(doc_path)
     end
 
     def update_repo_meta(get_readme = false)
+      # TODO: this isn't working rigt now... fix so we grab the readme
       if get_readme
         readme_content = repo_readme_content
       else
@@ -197,7 +207,7 @@ class GithubRepoScraper
 
         sleep SECONDS_BETWEEN_REQUESTS
 
-        break unless @github_doc.new_doc(@BASE_URL + next_path)
+        break unless @github_doc.new_doc(BASE_URL + next_path)
       end
     end
 

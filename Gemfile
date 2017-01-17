@@ -21,7 +21,6 @@ gem 'redis'
 gem 'figaro'
 gem 'activerecord-import'
 gem 'json'
-gem 'therubyracer'
 
 # JS Runtime
 gem 'therubyracer'

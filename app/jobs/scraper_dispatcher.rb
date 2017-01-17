@@ -1,10 +1,9 @@
-require_relative '../log_manager/log_manager'
+require_relative '../../lib/log_manager/log_manager'
 require_relative 'github_repo_scraper'
-require_relative '../redis/circular_redis_queue'
-require_relative '../redis/priority_queue'
-require_relative '../redis/redis_queue'
+require_relative 'circular_redis_queue'
+require_relative 'priority_queue'
+require_relative 'redis_queue'
 
-require 'pry'
 class ScraperDispatcher
   # Dispatches scrapers to use various redis queues and scrape for different
   # types of data
@@ -14,13 +13,15 @@ class ScraperDispatcher
 
   @current_repo = nil
 
-  def self.prioritized_repos_activity(enqueue: false, query: "stars > 10000", commits_on: true, issues_on: false)
-    queue = PriorityQueue.new(enqueue: enqueue, query: query)
+  def self.prioritized_repos_activity(enqueue: false, query: "stars > 10000", limit: 100_000, commits_on: true, issues_on: false)
+    repos = Repository.where(query).limit(limit)
+    queue = PriorityQueue.new(repos, enqueue: enqueue)
     scraper_handler(queue) do
       GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
       GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
     end
   end
+
 
   def self.scrape_commits(enqueue: false, query: "stars > 10")
     @log_manager = LogManager.new('commits')
@@ -40,11 +41,11 @@ class ScraperDispatcher
     end
   end
 
+
   def self.update_meta_data(enqueue: false, query: "stars IS_NULL")
     @log_manager = LogManager.new('metadata')
     repos = Repository.where(query) if enqueue
     queue = RedisQueue.new(repos, enqueue: enqueue)
-    # TODO: Debug and test the update repo data method on github scraper
     scraper_handler(queue) { GithubRepoScraper.update_repo_data([@current_repo]) }
   end
 
@@ -86,5 +87,3 @@ class ScraperDispatcher
     "#{((Time.now - start_time) / 60).round(2)} mins"
   end
 end
-
-binding.pry
