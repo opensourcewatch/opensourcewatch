@@ -1,8 +1,8 @@
 class DaemonTasks
   NODES = [
-    ENV[:DURENDAL_NODE],
-    ENV[:GUNGNIR_NODE],
-    ENV[:MIGL_NODE]
+    ENV["DURENDAL_NODE"],
+    ENV["GUNGNIR_NODE"],
+    ENV["MIGL_NODE"]
   ]
 
   # nodes: by index of NODES. I.e. 0, 1, 2
