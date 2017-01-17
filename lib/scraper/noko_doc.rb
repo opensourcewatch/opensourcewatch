@@ -9,6 +9,18 @@ class NokoDoc
     check_timeout { Nokogiri::HTML(open(url, @HEADERS_HASH)) }
   end
 
+  def self.check_timeout
+    tries ||= 3
+    yield
+  rescue Timeout::Error => e
+    tries -= 1
+    if tries > 0
+      retry
+    else
+      puts e.message
+    end
+  end
+
   def initialize(agent = "Ruby")
     @HEADERS_HASH = {"User-Agent" => agent}
   end

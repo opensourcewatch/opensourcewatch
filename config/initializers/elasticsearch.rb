@@ -1,3 +1,4 @@
+# NOTE: code is not currently in use...
 Elasticsearch::Model.client =
   if Rails.env.staging? || Rails.env.production?
     Elasticsearch::Client.new url: ENV['SEARCHBOX_URL']

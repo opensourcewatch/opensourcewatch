@@ -1,5 +1,5 @@
 source 'https://rubygems.org'
-ruby "2.3"
+ruby "2.3.0"
 
 gem 'nokogiri'  # Scraping
 gem 'httplog'   # Log requests
@@ -18,6 +18,13 @@ gem 'rails', '~> 5.0.0', '>= 5.0.0.1'
 gem 'puma', '~> 3.0' # App server
 gem "pg" # Use PostGreSQL
 gem 'redis'
+gem 'figaro'
+gem 'activerecord-import'
+gem 'json'
+gem 'therubyracer'
+
+# JS Runtime
+gem 'therubyracer'
 
 # Better search
 gem 'elasticsearch-model'

@@ -1,3 +1,4 @@
+# NOTE: Code is not currently in use...
 config = {
   host: "http://localhost:9200/",
   transport_options: {

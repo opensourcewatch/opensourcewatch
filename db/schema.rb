@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170104205310) do
+ActiveRecord::Schema.define(version: 20170111003533) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -21,19 +21,43 @@ ActiveRecord::Schema.define(version: 20170104205310) do
     t.datetime "created_at",        null: false
     t.datetime "updated_at",        null: false
     t.string   "github_identifier"
-    t.integer  "ruby_gem_id"
+    t.integer  "repository_id"
+    t.datetime "github_created_at"
   end
 
-  create_table "ruby_gems", force: :cascade do |t|
-    t.string   "url"
+  create_table "issue_comments", force: :cascade do |t|
+    t.integer  "user_id"
+    t.integer  "issue_id"
+    t.text     "body"
+    t.datetime "github_created_at"
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
+  end
+
+  create_table "issues", force: :cascade do |t|
+    t.integer  "repository_id"
     t.string   "name"
-    t.integer  "downloads"
-    t.datetime "created_at",   null: false
-    t.datetime "updated_at",   null: false
+    t.string   "creator"
+    t.string   "url"
+    t.string   "open_date"
+    t.integer  "issue_number"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "repositories", force: :cascade do |t|
+    t.string   "name"
+    t.integer  "github_id"
+    t.string   "url"
+    t.string   "language"
     t.integer  "stars"
-    t.float    "score"
-    t.text     "description"
-    t.integer  "contributors"
+    t.integer  "forks"
+    t.datetime "created_at",     null: false
+    t.datetime "updated_at",     null: false
+    t.text     "readme_content"
+    t.integer  "watchers"
+    t.integer  "score"
+    t.integer  "open_issues"
   end
 
   create_table "users", force: :cascade do |t|
