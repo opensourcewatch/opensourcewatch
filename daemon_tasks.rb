@@ -65,7 +65,7 @@ class DaemonTasks
 
   def restart
     kill
-    # start('all')
+    start('all')
   end
 
   def status
