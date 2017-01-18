@@ -45,7 +45,8 @@ class DaemonTasks
       execution += " -m --pidfile #{pidfile_path}"
       execution += " -u #{user} -d #{working_directory}"
       execution += " -b --startas #{execution_path}\""
-      puts `#{execution}`
+      output = `#{execution}`
+      puts output unless output.chomp.empty?
     end
     status
   end
@@ -149,7 +150,7 @@ class DaemonTasks
   end
 
   def get_pid(pidfile = get_pidfile)
-    return '' if pidfile.empty? 
+    return '' if pidfile.empty?
     `#{ssh_current} "cat #{pidfile_dir}/#{pidfile}"`.chomp
   end
 
