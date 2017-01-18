@@ -127,7 +127,7 @@ class DaemonTasks
     process = `#{ssh_current} "ls #{execution_dir}"`.chomp
     pidfile = get_pidfile
     if pidfile.length > 0
-      pid = get_pid(pidfile)
+      pid = get_pid
       if multiple_processes?(pid)
         "NEEDS INVESTIGATION: Node #{node_name} has multiple processes in pidfile"
       elsif running?(pid)
@@ -144,8 +144,8 @@ class DaemonTasks
     `#{ssh_current} "ls #{pidfile_dir}/"`.chomp
   end
 
-  def get_pid(pidfile = get_pidfile)
-    `#{ssh_current} cat #{pidfile_dir}/#{pidfile}`.chomp
+  def get_pid
+    `#{ssh_current} "cat #{pidfile_dir}/*"`.chomp
   end
 
   def process_should_be_running?(process)
