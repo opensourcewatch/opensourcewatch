@@ -89,7 +89,9 @@ class DaemonTasks
       end
 
       process = `#{ssh_current} "ls #{execution_dir}"`.chomp
-      msg = if running?
+      msg = if multiple_processes?
+              "NEEDS INVESTIGATION: Node #{node_name} has multiple process in pidfile"
+            elsif running?
               "RUNNING: Node #{node_name} with process #{process}."
             elsif !running? && !process.empty?
               "SHOULD BE RUNNING: Node #{node_name} should be running process #{process}."
@@ -128,6 +130,15 @@ class DaemonTasks
     `#{ssh_current} 'echo "#!#{bash_path}" > #{execution_path}'`
     `#{ssh_current} 'echo "#{task}" >> #{execution_path}'`
     `#{ssh_current} chmod u=rwx #{execution_path}`
+  end
+
+  def multiple_processes?
+    pid = `#{ssh_current} cat #{pidfile_dir}/*`.chomp
+    if pid.split("\n").count > 1
+      true
+    else
+      false
+    end
   end
 
   def running?
