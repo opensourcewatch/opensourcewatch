@@ -74,9 +74,9 @@ user_comments[:daily]   = "\"EXPLAIN ANALYZE SELECT  users.*, count(users.id) as
 user_comments[:weekly]  = "\"EXPLAIN ANALYZE SELECT  users.*, count(users.id) as hit_count FROM \"users\" INNER JOIN issue_comments ON issue_comments.user_id = users.id WHERE (\"issue_comments\".\"github_created_at\" BETWEEN '#{beg_week}' AND '#{end_week}') GROUP BY users.id ORDER BY hit_count desc LIMIT 1\""
 user_comments[:monthly] = "\"EXPLAIN ANALYZE SELECT  users.*, count(users.id) as hit_count FROM \"users\" INNER JOIN issue_comments ON issue_comments.user_id = users.id WHERE (\"issue_comments\".\"github_created_at\" BETWEEN '#{beg_month}' AND '#{end_month}') GROUP BY users.id ORDER BY hit_count desc LIMIT 1\""
 
+benchmark(repo)
 benchmark(issue)
 benchmark(user_commits)
 benchmark(user_comments)
-benchmark(repo)
 
 puts $query_times
