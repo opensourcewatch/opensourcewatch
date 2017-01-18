@@ -216,7 +216,7 @@ class GithubRepoScraper
         relative_time = commit_info.css('relative-time')
         next if relative_time.empty?
         commit_date = Time.parse(relative_time[0][:datetime])
-        throw :recent_commits_finished unless commit_date.to_date >= last_years_time # for today: commit_date.today?
+        throw :recent_commits_finished unless commit_date.to_date >= last_90_days # for today: commit_date.today?
 
         # Not all avatars are users
         user_anchor = commit_info.css('.commit-avatar-cell a')[0]
@@ -255,6 +255,10 @@ class GithubRepoScraper
 
     def last_years_time
       DateTime.now - 365
+    end
+
+    def last_90_days
+      DateTime.now - 90
     end
 
     def repo_readme_content

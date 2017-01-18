@@ -3,7 +3,8 @@ class DaemonTasks
     ENV["DURENDAL_NODE"],
     ENV["GUNGNIR_NODE"],
     ENV["MIGL_NODE"],
-    ENV["MIGL_TWO_NODE"]
+    ENV["MIGL_TWO_NODE"],
+    ENV["MIGL_THREE_NODE"]
   ]
 
   # nodes: by index of NODES. I.e. 0, 1, 2
@@ -31,6 +32,7 @@ class DaemonTasks
         next
       end
 
+      clear_temporary_files
       init_daemon_folder_structure
       ensure_pidfile
       task = which_task
@@ -58,7 +60,7 @@ class DaemonTasks
       output = `#{ssh_current} ps --ppid #{pid}`
       ppid = output.split("\n")[1].strip[/^[0-9]+/]
       `#{ssh_current} kill #{ppid}`
-      clear_node_task_files
+      clear_temporary_files
       puts "Process #{process} killed on #{node_name}"
     end
     status
@@ -66,7 +68,7 @@ class DaemonTasks
 
   def restart
     kill
-    start('all')
+    start
   end
 
   def status
@@ -89,7 +91,9 @@ class DaemonTasks
       end
 
       process = `#{ssh_current} "ls #{execution_dir}"`.chomp
-      msg = if running?
+      msg = if multiple_processes?
+              "NEEDS INVESTIGATION: Node #{node_name} has multiple processes in pidfile"
+            elsif running?
               "RUNNING: Node #{node_name} with process #{process}."
             elsif !running? && !process.empty?
               "SHOULD BE RUNNING: Node #{node_name} should be running process #{process}."
@@ -130,8 +134,21 @@ class DaemonTasks
     `#{ssh_current} chmod u=rwx #{execution_path}`
   end
 
+  def multiple_processes?
+    pidfile = `#{ssh_current} ls #{pidfile_dir}/`.chomp
+    return false if pidfile.empty?
+    pid = `#{ssh_current} cat #{pidfile_dir}/#{pidfile}`.chomp
+    if pid.split("\n").count > 1
+      true
+    else
+      false
+    end
+  end
+
   def running?
-    pid = `#{ssh_current} cat #{pidfile_dir}/*`.chomp
+    pidfile = `#{ssh_current} ls #{pidfile_dir}/`.chomp
+    return false if pidfile.empty?
+    pid = `#{ssh_current} cat #{pidfile_dir}/#{pidfile}`.chomp
     if `#{ssh_current} ps -fp #{pid}`.split("\n").count == 1
       false
     else
@@ -147,10 +164,19 @@ class DaemonTasks
     end
   end
 
+  def clear_temporary_files
+    clear_node_task_files
+    clear_node_pid_files
+  end
+
   def clear_node_task_files
-    # TODO: make sure this works
     task_files = `#{ssh_current} ls #{execution_dir}/`.split("\n")
     task_files.each { |f| `#{ssh_current} rm #{execution_dir}/#{f}`}
+  end
+
+  def clear_node_pid_files
+    task_files = `#{ssh_current} ls #{pidfile_dir}/`.split("\n")
+    task_files.each { |f| `#{ssh_current} rm #{pidfile_dir}/#{f}`}
   end
 
   def ssh_current
