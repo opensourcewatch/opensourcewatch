@@ -27,7 +27,7 @@ class NokoDoc
   def new_doc(url)
     check_timeout { @doc = Nokogiri::HTML(open(url, @HEADERS_HASH)) }
   rescue OpenURI::HTTPError => e
-    if e.message != '404 Not Found'
+    if e.message != '404 Not Found' || e.message != '451'
       raise OpenURI::HTTPError.new(e.message, e.io)
     end
     nil
