@@ -134,6 +134,7 @@ class DaemonTasks
   end
 
   def multiple_processes?
+    return false if `#{ssh_current} ls #{pidfile_dir}/`.empty?
     pid = `#{ssh_current} cat #{pidfile_dir}/*`.chomp
     if pid.split("\n").count > 1
       true
