@@ -6,6 +6,15 @@ require 'open-uri'
 class NokoDoc
   def self.new_temp_doc(url)
     check_timeout { Nokogiri::HTML(open(url, @HEADERS_HASH)) }
+  rescue OpenURI::HTTPError => e
+    msg = e.message.chomp
+    if  msg != '404 Not Found' ||
+        msg != '451' ||
+        msg != '500 Internal Server Error'
+      # TODO: Need to add logging for when we hit these errors
+      raise OpenURI::HTTPError.new(e.message, e.io)
+    end
+    nil
   end
 
   def self.check_timeout
@@ -27,7 +36,10 @@ class NokoDoc
   def new_doc(url)
     check_timeout { @doc = Nokogiri::HTML(open(url, @HEADERS_HASH)) }
   rescue OpenURI::HTTPError => e
-    if e.message != '404 Not Found' || e.message != '451'
+    msg = e.message.chomp
+    if  msg != '404 Not Found' ||
+        msg != '451' ||
+        msg != '500 Internal Server Error'
       # TODO: Need to add logging for when we hit these errors
       raise OpenURI::HTTPError.new(e.message, e.io)
     end
