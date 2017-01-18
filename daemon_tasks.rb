@@ -31,6 +31,7 @@ class DaemonTasks
         next
       end
 
+      clear_node_task_files
       init_daemon_folder_structure
       ensure_pidfile
       task = which_task
