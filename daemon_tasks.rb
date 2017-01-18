@@ -29,7 +29,7 @@ class DaemonTasks
 
     @node_ids.each do |n|
       @curr_node = n
-      if running?(get_pid)
+      if running?
         puts "Node #{node_name} is currently running"
         next
       end
@@ -53,7 +53,7 @@ class DaemonTasks
   def kill
     @node_ids.each do |n|
       @curr_node = n
-      if !running?(get_pid)
+      if !running?
         puts "Node #{node_name} is not currently running."
         next
       end
@@ -132,10 +132,9 @@ class DaemonTasks
     process = `#{ssh_current} "ls #{execution_dir}"`.chomp
     pidfile = get_pidfile
     if pidfile.length > 0
-      pid = get_pid
-      if multiple_processes?(pid)
+      if multiple_processes?
         "NEEDS INVESTIGATION: Node #{node_name} has multiple processes in pidfile"
-      elsif running?(pid)
+      elsif running?
         "RUNNING: Node #{node_name} with process #{process}."
       elsif process_should_be_running?(process)
         "SHOULD BE RUNNING: Node #{node_name} should be running process #{process}."
@@ -149,24 +148,26 @@ class DaemonTasks
     `#{ssh_current} "ls #{pidfile_dir}/"`.chomp
   end
 
-  def get_pid
-    `#{ssh_current} "cat #{pidfile_dir}/*"`.chomp
+  def get_pid(pidfile = get_pidfile)
+    return '' if pidfile.empty? 
+    `#{ssh_current} "cat #{pidfile_dir}/#{pidfile}"`.chomp
   end
 
   def process_should_be_running?(process)
     !process.empty?
   end
 
-  def multiple_processes?(pid)
-    if pid.split("\n").count > 1
+  def multiple_processes?
+    if get_pid.split("\n").count > 1
       true
     else
       false
     end
   end
 
-  def running?(pid)
-    if `#{ssh_current} ps -fp #{pid}`.split("\n").count == 1
+  def running?
+    pid = get_pid
+    if pid.empty? || `#{ssh_current} ps -fp #{pid}`.split("\n").count == 1
       false
     else
       true
