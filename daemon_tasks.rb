@@ -99,8 +99,7 @@ class DaemonTasks
 
   def init_daemon_folder_structure
     # --parents makes no errors thrown if extra folders need to be made
-    `#{ssh_current} mkdir #{pidfile_dir} --parents`
-    `#{ssh_current} mkdir #{execution_dir} --parents`
+    `#{ssh_current} "mkdir #{pidfile_dir} #{execution_dir} --parents"`
   end
 
   def which_task
