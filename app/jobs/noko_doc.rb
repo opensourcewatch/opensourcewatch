@@ -37,8 +37,10 @@ class NokoDoc
     check_timeout { @doc = Nokogiri::HTML(open(url, @HEADERS_HASH)) }
   rescue OpenURI::HTTPError => e
     msg = e.message.chomp
-    if  msg != '404 Not Found' ||
-        msg != '451' ||
+    if msg == '429 Too Many Requests'
+      sleep 60
+    elsif msg != '404 Not Found' &&
+        msg != '451' &&
         msg != '500 Internal Server Error'
       # TODO: Need to add logging for when we hit these errors
       raise OpenURI::HTTPError.new(e.message, e.io)
