@@ -58,7 +58,7 @@ class DaemonTasks
         next
       end
       process = `#{ssh_current} "ls #{execution_dir}"`.chomp
-      pid = `#{ssh_current} "cat #{pidfile_dir}/*"`.chomp
+      pid = get_pid.chomp
       output = `#{ssh_current} "ps --ppid #{pid}"`
       ppid = output.split("\n")[1].strip[/^[0-9]+/]
       `#{ssh_current} kill #{ppid}`
