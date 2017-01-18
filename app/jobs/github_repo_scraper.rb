@@ -225,11 +225,8 @@ class GithubRepoScraper
         user_anchor = commit_info.css('.commit-avatar-cell a')[0]
         github_username = user_anchor['href'][1..-1] if user_anchor
 
-        if !github_username.nil? && !User.exists?(github_username: github_username)
-          user = User.create(github_username: github_username)
-          puts "User CREATE github_username:#{user.github_username}"
-        elsif !github_username.nil?
-          user = User.find_by(github_username: github_username)
+        if !github_username.nil?
+          user = User.find_or_create_by(github_username: github_username)
         end
 
         if user
