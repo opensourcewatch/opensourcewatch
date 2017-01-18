@@ -9,6 +9,9 @@ class GithubRepoScraper
   @commits_created_this_session = 0
   @start_time = Time.now
 
+  # Commits that will be bulk imported
+  @stashed_commits = []
+
   # TODO: Investigate and add error handling for 404/500 from github so the error
   # is logged but doesn't just crash
   # TODO: add check so that these methods don't necessarily take and active record
@@ -234,16 +237,20 @@ class GithubRepoScraper
           github_identifier = commit_info.css("a.sha").text.strip
           github_created_at = DateTime.parse(commit_info.css("relative-time").first['datetime'])
 
-          unless Commit.exists?(github_identifier: github_identifier)
-            Commit.create(
-              message: message,
-              user: user,
-              repository: @current_repo,
-              github_identifier: github_identifier,
-              github_created_at: github_created_at
-              )
-            @commits_created_this_session += 1
-            puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
+          @stashed_commits.push Commit.new({
+                                  message: message,
+                                  user: user,
+                                  repository: @current_repo,
+                                  github_identifier: github_identifier,
+                                  github_created_at: github_created_at
+                                })
+
+          if @stashed_commits.count >= 30
+            @commits_created_this_session += 30
+
+            Commit.import(@stashed_commits)
+
+            @stashed_commits.clear
             puts "Commits cretaed this session: #{@commits_created_this_session}"
             puts "Total time so far: #{((Time.now - @start_time) / 60).round(2)}"
           end
