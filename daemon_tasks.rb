@@ -76,30 +76,20 @@ class DaemonTasks
     nodes.each do |n|
       @curr_node = n
       puts "#{n}:"
-      has_no_working_directory = `#{ssh_current} "ls #{working_directory}"`.empty?
-      if has_no_working_directory
+      working_directory_list = `#{ssh_current} "ls -a #{working_directory}"`
+      if working_directory_list.empty?
         puts "\tNOT YET SET UP. Node #{node_name} has not even been set up to run yet."
         puts
         next
       end
 
-      daemon_struct = `#{ssh_current} "ls -a #{working_directory}"`.include?('.daemon_tasks')
-      if !daemon_struct
+      if !working_directory_list.include?('.daemon_tasks')
         puts "\tNEVER BEEN RUN. Node #{node_name} has never been run."
         puts
         next
       end
 
-      process = `#{ssh_current} "ls #{execution_dir}"`.chomp
-      msg = if multiple_processes?
-              "NEEDS INVESTIGATION: Node #{node_name} has multiple processes in pidfile"
-            elsif running?
-              "RUNNING: Node #{node_name} with process #{process}."
-            elsif !running? && !process.empty?
-              "SHOULD BE RUNNING: Node #{node_name} should be running process #{process}."
-            else
-              "NOT RUNNING: Node #{node_name} is currently waiting for a job."
-            end
+      msg = check_processes
       puts "\t" + msg
       puts
     end
@@ -134,10 +124,28 @@ class DaemonTasks
     `#{ssh_current} chmod u=rwx #{execution_path}`
   end
 
-  def multiple_processes?
-    pidfile = `#{ssh_current} ls #{pidfile_dir}/`.chomp
-    return false if pidfile.empty?
-    pid = `#{ssh_current} cat #{pidfile_dir}/#{pidfile}`.chomp
+  def check_processes
+    process = `#{ssh_current} "ls #{execution_dir}"`.chomp
+    pidfile = `#{ssh_current} "ls #{pidfile_dir}/"`.chomp
+    if pidfile.length > 0
+      pid = `#{ssh_current} cat #{pidfile_dir}/#{pidfile}`.chomp
+      if multiple_processes?(pid)
+        "NEEDS INVESTIGATION: Node #{node_name} has multiple processes in pidfile"
+      elsif running?(pid)
+        "RUNNING: Node #{node_name} with process #{process}."
+      elsif process_should_be_running?(process)
+        "SHOULD BE RUNNING: Node #{node_name} should be running process #{process}."
+      end
+    else
+      "NOT RUNNING: Node #{node_name} is currently waiting for a job."
+    end
+  end
+
+  def process_should_be_running?(process)
+    !process.empty?
+  end
+
+  def multiple_processes?(pid)
     if pid.split("\n").count > 1
       true
     else
@@ -145,10 +153,7 @@ class DaemonTasks
     end
   end
 
-  def running?
-    pidfile = `#{ssh_current} ls #{pidfile_dir}/`.chomp
-    return false if pidfile.empty?
-    pid = `#{ssh_current} cat #{pidfile_dir}/#{pidfile}`.chomp
+  def running?(pid)
     if `#{ssh_current} ps -fp #{pid}`.split("\n").count == 1
       false
     else
