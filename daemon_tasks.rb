@@ -1,3 +1,5 @@
+# TODO: Make nodes a class
+# TODO: Refactor
 class DaemonTasks
   NODES = [
     ENV["DURENDAL_NODE"],
@@ -76,26 +78,29 @@ class DaemonTasks
     nodes.each do |n|
       @curr_node = n
       puts "#{n}:"
-      working_directory_list = `#{ssh_current} "ls -a #{working_directory}"`
-      if working_directory_list.empty?
-        puts "\tNOT YET SET UP. Node #{node_name} has not even been set up to run yet."
-        puts
-        next
-      end
 
-      if !working_directory_list.include?('.daemon_tasks')
-        puts "\tNEVER BEEN RUN. Node #{node_name} has never been run."
-        puts
+      msg = working_directory_status
+      if msg
+        puts msg
         next
+      else
+        puts "\t#{check_processes} \n\n"
       end
-
-      msg = check_processes
-      puts "\t" + msg
-      puts
     end
   end
 
   private
+
+  def working_directory_status
+    working_directory_list = `#{ssh_current} "ls -a #{working_directory}"`
+    if working_directory_list.empty?
+      "\tNOT YET SET UP. Node #{node_name} has not even been set up to run yet.\n\n"
+    end
+
+    if !working_directory_list.include?('.daemon_tasks')
+      "\tNEVER BEEN RUN. Node #{node_name} has never been run.\n\n"
+    end
+  end
 
   def init_daemon_folder_structure
     # --parents makes no errors thrown if extra folders need to be made
