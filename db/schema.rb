@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170111003533) do
+ActiveRecord::Schema.define(version: 20170118232853) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -23,6 +23,7 @@ ActiveRecord::Schema.define(version: 20170111003533) do
     t.string   "github_identifier"
     t.integer  "repository_id"
     t.datetime "github_created_at"
+    t.index ["github_identifier"], name: "index_commits_on_github_identifier", using: :btree
   end
 
   create_table "issue_comments", force: :cascade do |t|
@@ -69,6 +70,7 @@ ActiveRecord::Schema.define(version: 20170111003533) do
     t.float    "score"
     t.datetime "created_at",      null: false
     t.datetime "updated_at",      null: false
+    t.index ["github_username"], name: "index_users_on_github_username", using: :btree
   end
 
 end
