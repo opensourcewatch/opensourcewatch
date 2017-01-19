@@ -15,7 +15,7 @@ class ScraperDispatcher
 
   def self.prioritized_repos_activity
     queue = PriorityQueue.new
-    
+
     scraper_handler(queue) do
       GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
       GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
@@ -48,11 +48,11 @@ class ScraperDispatcher
   end
 
   def self.scrape_once
-    @log_manager = LogManager.new('commits')
+    @log_manager = LogManager.new('issues')
     queue = RedisQueue.new
 
     scraper_handler(queue) do
-      GithubRepoScraper.commits(repositories: [@current_repo])
+      GithubRepoScraper.issues(repositories: [@current_repo])
     end
   end
 
