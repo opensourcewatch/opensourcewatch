@@ -1,7 +1,7 @@
 class CreateMatviewsForChattiestUsers < ActiveRecord::Migration[5.0]
 
   def up
-    name = "top_users_matview_last_0"
+    name = "chattiest_users_matview_last_0"
     execute <<-SQL
       DROP MATERIALIZED VIEW IF EXISTS #{name};
       CREATE MATERIALIZED VIEW #{name} AS
@@ -11,7 +11,7 @@ class CreateMatviewsForChattiestUsers < ActiveRecord::Migration[5.0]
         GROUP BY users.id ORDER BY hit_count desc;
     SQL
 
-    name = "top_users_matview_last_7"
+    name = "chattiest_users_matview_last_7"
     execute <<-SQL
       DROP MATERIALIZED VIEW IF EXISTS #{name};
       CREATE MATERIALIZED VIEW #{name} AS
@@ -21,7 +21,7 @@ class CreateMatviewsForChattiestUsers < ActiveRecord::Migration[5.0]
         GROUP BY users.id ORDER BY hit_count desc;
     SQL
 
-    name = "top_users_matview_last_30"
+    name = "chattiest_users_matview_last_30"
     execute <<-SQL
       DROP MATERIALIZED VIEW IF EXISTS #{name};
       CREATE MATERIALIZED VIEW #{name} AS
@@ -31,7 +31,7 @@ class CreateMatviewsForChattiestUsers < ActiveRecord::Migration[5.0]
         GROUP BY users.id ORDER BY hit_count desc;
     SQL
 
-    name = "top_users_matview_last_90"
+    name = "chattiest_users_matview_last_90"
     execute <<-SQL
       DROP MATERIALIZED VIEW IF EXISTS #{name};
       CREATE MATERIALIZED VIEW #{name} AS
