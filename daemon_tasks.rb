@@ -62,7 +62,8 @@ class DaemonTasks
       pid = get_pid.chomp
       output = `#{ssh_current} "ps --ppid #{pid}"`
       ppid = output.split("\n")[1].strip[/^[0-9]+/]
-      `#{ssh_current} kill #{ppid}`
+      `#{ssh_current} "kill #{pid}"`
+      `#{ssh_current} "kill #{ppid}"`
       clear_temporary_files
       puts "Process #{process} killed on #{node_name}"
     end
