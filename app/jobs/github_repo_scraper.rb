@@ -54,7 +54,7 @@ class GithubRepoScraper
       handle_scrape_limits(scrape_limit_opts)
 
       @repositories.each do |repo|
-        break unless get_repo_doc(repo, "/issues")
+        break unless get_repo_doc(repo, "/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc")
 
         update_repo_meta if get_repo_meta
 
@@ -65,6 +65,8 @@ class GithubRepoScraper
           raw_issues = @github_doc.doc.css("div.issues-listing ul li div.d-table")
 
           raw_issues.each do |raw_issue|
+            built_issue = build_issue(raw_issue)
+            next if built_issue.nil?
             issue = Issue.create( build_issue(raw_issue) )
             puts "Creating Issue" if issue.id
 
@@ -148,6 +150,10 @@ class GithubRepoScraper
     end
 
     def build_issue(raw_issue)
+      last_update_str = raw_issue.css('span.issue-meta-section.ml-2 relative-time')[0]['datetime']
+      last_update = Time.parse(last_update_str)
+      return nil if last_update < Date.today - 90
+
       issue = {}
       issue['repository_id'] = @current_repo.id
 
@@ -156,6 +162,9 @@ class GithubRepoScraper
       issue['url'] = raw_issue.css("a.h4").attribute("href").value
 
       issue_number, open_date, creator = raw_issue.css("span.opened-by").text.strip.split("\n")
+      # NOTE: When we want to make open_date a string
+      # date_str = raw_issue.css('span.opened-by relative-time').first['datetime']
+      # open_date = Time.parse(date_str)
 
       issue['issue_number'] = issue_number[1..-1].to_i
       issue['creator'] = creator.strip
