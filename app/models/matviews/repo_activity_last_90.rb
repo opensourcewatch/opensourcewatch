@@ -1,4 +1,4 @@
-class RepoActivityMatviewLast90 < ActiveRecord::Base
+class Matviews::RepoActivityLast90 < ActiveRecord::Base
   self.table_name = "repo_activity_matview_last_90"
 
   def self.refresh
