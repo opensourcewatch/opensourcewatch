@@ -62,7 +62,8 @@ class DaemonTasks
       pid = get_pid.chomp
       output = `#{ssh_current} "ps --ppid #{pid}"`
       ppid = output.split("\n")[1].strip[/^[0-9]+/]
-      `#{ssh_current} kill #{ppid}`
+      `#{ssh_current} "kill #{pid}"`
+      `#{ssh_current} "kill #{ppid}"`
       clear_temporary_files
       puts "Process #{process} killed on #{node_name}"
     end
@@ -125,7 +126,8 @@ class DaemonTasks
     `#{ssh_current} touch #{execution_path}`
     bash_path = `#{ssh_current} which bash`
     `#{ssh_current} 'echo "#!#{bash_path}" > #{execution_path}'`
-    `#{ssh_current} 'echo "#{task}" >> #{execution_path}'`
+    `#{ssh_current} 'echo -e "while true\ndo" >> #{execution_path}'`
+    `#{ssh_current} 'echo -e "\t#{task}\ndone" >> #{execution_path}'`
     `#{ssh_current} chmod u=rwx #{execution_path}`
   end
 
