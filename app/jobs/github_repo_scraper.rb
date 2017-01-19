@@ -136,7 +136,7 @@ class GithubRepoScraper
     # Basically let's make that query when we get the repo.
     def build_comment(raw_comment)
       user_name = raw_comment.css("a.author").text
-      user = User.find_by(github_username: user_name)
+      user = User.find_by(github_username: user_name) # TODO: use create! and if it fails, a rescue and find ?
       unless user
         puts "Creating new user: #{user_name}"
         user = User.create(github_username: user_name)
