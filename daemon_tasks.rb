@@ -24,6 +24,14 @@ class DaemonTasks
     end
   end
 
+  def pull_branch(branch)
+    nodes = @node_ids || all_node_ids
+    nodes.each do |n|
+      @curr_node = n
+      `#{ssh_current} "cd ~/workspace/capstone;git pull origin #{branch}"`
+    end
+  end
+
   def start(process)
     @curr_process = process
 
