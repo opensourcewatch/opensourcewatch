@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170118232853) do
+ActiveRecord::Schema.define(version: 20170119185936) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -33,6 +33,7 @@ ActiveRecord::Schema.define(version: 20170118232853) do
     t.datetime "github_created_at"
     t.datetime "created_at",        null: false
     t.datetime "updated_at",        null: false
+    t.index ["github_created_at"], name: "index_issue_comments_on_github_created_at", using: :btree
   end
 
   create_table "issues", force: :cascade do |t|
