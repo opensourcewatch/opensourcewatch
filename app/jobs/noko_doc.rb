@@ -5,10 +5,17 @@ require 'open-uri'
 # of the error handling with connections started by Nokogiri
 class NokoDoc
   def self.new_temp_doc(url)
+    tries ||= 3
     check_timeout { Nokogiri::HTML(open(url, @HEADERS_HASH)) }
   rescue OpenURI::HTTPError => e
     msg = e.message.chomp
-    if  msg != '404 Not Found' ||
+    if msg == '429 Too Many Requests'
+      sleep 60
+    elsif  msg == '503 Service Unavailable'
+      sleep 60
+      tries -= 1
+      retry if tries > 0
+    elsif  msg != '404 Not Found' ||
         msg != '451' ||
         msg != '500 Internal Server Error'
       # TODO: Need to add logging for when we hit these errors
@@ -34,11 +41,16 @@ class NokoDoc
   end
 
   def new_doc(url)
+    tries ||= 3
     check_timeout { @doc = Nokogiri::HTML(open(url, @HEADERS_HASH)) }
   rescue OpenURI::HTTPError => e
     msg = e.message.chomp
     if msg == '429 Too Many Requests'
       sleep 60
+    elsif  msg == '503 Service Unavailable'
+      sleep 60
+      tries -= 1
+      retry if tries > 0
     elsif msg != '404 Not Found' &&
         msg != '451' &&
         msg != '500 Internal Server Error'
