@@ -126,7 +126,8 @@ class DaemonTasks
     `#{ssh_current} touch #{execution_path}`
     bash_path = `#{ssh_current} which bash`
     `#{ssh_current} 'echo "#!#{bash_path}" > #{execution_path}'`
-    `#{ssh_current} 'echo "#{task}" >> #{execution_path}'`
+    `#{ssh_current} 'echo -e "while true\ndo" >> #{execution_path}'`
+    `#{ssh_current} 'echo -e "\t#{task}\ndone" >> #{execution_path}'`
     `#{ssh_current} chmod u=rwx #{execution_path}`
   end
 
