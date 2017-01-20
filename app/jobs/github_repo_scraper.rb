@@ -53,6 +53,7 @@ class GithubRepoScraper
     def issues(scrape_limit_opts={}, get_repo_meta=false)
       handle_scrape_limits(scrape_limit_opts)
 
+      @comments_cache = []
       @repositories.each do |repo|
         break unless get_repo_doc(repo, "/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc")
 
@@ -93,10 +94,19 @@ class GithubRepoScraper
           raw_comments.each do |raw_comment|
             comment_json = build_comment(raw_comment)
             comment_json['issue_id'] = issue.id
+            @comments_cache << IssueComment.new(comment_json)
 
-            issue_comment = IssueComment.create(comment_json)
-            puts "Creating Issue Comment" if issue_comment
           end
+          if @comments_cache.count > 30
+            require 'benchmark'
+            b = Benchmark.measure do
+              IssueComment.import(@comments_cache)
+            end
+            puts "Time to create #{@comments_cache.count} Issue Comments with bulk import after pushing validation into DB\n\n"
+            puts "\t #{b.real}"
+            @comments_cache.clear
+          end
+
         end
       end
     end
