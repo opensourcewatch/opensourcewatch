@@ -15,11 +15,18 @@ class Query
     @resource, @base_query = resource, base_query
   end
 
-  def run_queries
+  def run_queries(verbose = true)
     TIME_FRAMES.each do |window|
       @beg_day = calc_beg_day(window)
       sql = generate
-      @summary << "#{@resource} last #{window} days: #{execute(sql)} ms"
+
+      if verbose == true
+        query_log_line = "#{@resource} last #{window} days: #{execute(sql)} ms"
+      else
+        query_log_line = execute(sql).to_s
+      end
+
+      @summary << query_log_line
     end
     puts @summary
   end
@@ -58,24 +65,25 @@ class Query
   end
 end
 
+verbose = false
 # Queries
 #repo_all_time = "\"EXPLAIN ANALYZE SELECT  repositories.*, count(repositories.id) as hit_count FROM \"repositories\" INNER JOIN \"commits\" ON \"commits\".\"repository_id\" = \"repositories\".\"id\" GROUP BY repositories.id ORDER BY hit_count DESC LIMIT 5\""
 repo_base_query = [ "\"EXPLAIN ANALYZE SELECT  repositories.id, repositories.name, count(repositories.id) AS hit_count FROM \"repositories\" INNER JOIN commits ON commits.repository_id = repositories.id WHERE (\"commits\".\"github_created_at\" BETWEEN ",
                     " ) GROUP BY repositories.id ORDER BY hit_count desc LIMIT 5\"" ]
 repo_queries = Query.new("repository activity", repo_base_query)
-repo_queries.run_queries
+repo_queries.run_queries(verbose)
 
 issue_base_query = ["\"EXPLAIN ANALYZE SELECT  issues.id, issues.name, count(issues.id) AS hit_count FROM \"issues\" INNER JOIN issue_comments ON issue_comments.issue_id = issues.id WHERE (\"issue_comments\".\"github_created_at\" BETWEEN ",
                     " ) GROUP BY issues.id ORDER BY hit_count desc LIMIT 5\""]
 issue_queries = Query.new("issue activity", issue_base_query)
-issue_queries.run_queries
+issue_queries.run_queries(verbose)
 
 user_commits_base_query  = ["\"EXPLAIN ANALYZE SELECT  users.*, count(users.id) as hit_count FROM \"users\" INNER JOIN commits ON commits.user_id = users.id WHERE (\"commits\".\"github_created_at\" BETWEEN ",
                             " ) GROUP BY users.id ORDER BY hit_count desc LIMIT 5\""]
 user_commits = Query.new('user activity', user_commits_base_query)
-user_commits.run_queries
+user_commits.run_queries(verbose)
 
 user_comments_base_query = ["\"EXPLAIN ANALYZE SELECT  users.*, count(users.id) as hit_count FROM \"users\" INNER JOIN issue_comments ON issue_comments.user_id = users.id WHERE (\"issue_comments\".\"github_created_at\" BETWEEN ",
                             " ) GROUP BY users.id ORDER BY hit_count desc LIMIT 1\""]
 user_comments = Query.new('chattiest user', user_comments_base_query)
-user_comments.run_queries
+user_comments.run_queries(verbose)
