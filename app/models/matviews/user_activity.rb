@@ -1,98 +1,33 @@
 
-class Matviews::TopUserLast0 < ActiveRecord::Base
+class Matviews::TopUserLast0 < Matviews::Matview
   self.table_name = "top_users_matview_last_0"
-
-  def self.refresh
-    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW #{self.class.table_name}")
-  end
-
-  def readonly?
-    true
-  end
 end
 
-class Matviews::TopUserLast7 < ActiveRecord::Base
+class Matviews::TopUserLast7 < Matviews::Matview
   self.table_name = "top_users_matview_last_7"
-
-  def self.refresh
-    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW #{self.class.table_name}")
-  end
-
-  def readonly?
-    true
-  end
 end
 
-class Matviews::TopUserLast30 < ActiveRecord::Base
+class Matviews::TopUserLast30 < Matviews::Matview
   self.table_name = "top_users_matview_last_30"
-
-  def self.refresh
-    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW #{self.class.table_name}")
-  end
-
-  def readonly?
-    true
-  end
 end
 
 
-class Matviews::TopUserLast90 < ActiveRecord::Base
+class Matviews::TopUserLast90 < Matviews::Matview
   self.table_name = "top_users_matview_last_90"
-
-  def self.refresh
-    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW  #{self.class.table_name}")
-  end
-
-  def readonly?
-    true
-  end
 end
 
-class Matviews::ChattiestUserLast0 < ActiveRecord::Base
+class Matviews::ChattiestUserLast0 < Matviews::Matview
   self.table_name = "chattiest_users_matview_last_0"
-
-  def self.refresh
-    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW #{self.class.table_name}")
-  end
-
-  def readonly?
-    true
-  end
 end
 
-class Matviews::ChattiestUserLast7 < ActiveRecord::Base
+class Matviews::ChattiestUserLast7 < Matviews::Matview
   self.table_name = "chattiest_users_matview_last_7"
-
-  def self.refresh
-    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW #{self.class.table_name}")
-  end
-
-  def readonly?
-    true
-  end
 end
 
-class Matviews::ChattiestUserLast30 < ActiveRecord::Base
+class Matviews::ChattiestUserLast30 < Matviews::Matview
   self.table_name = "chattiest_users_matview_last_30"
-
-  def self.refresh
-    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW #{self.class.table_name}")
-  end
-
-  def readonly?
-    true
-  end
 end
 
-
-class Matviews::ChattiestUserLast90 < ActiveRecord::Base
+class Matviews::ChattiestUserLast90 < Matviews::Matview
   self.table_name = "chattiest_users_matview_last_90"
-
-  def self.refresh
-    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW  #{self.class.table_name}")
-  end
-
-  def readonly?
-    true
-  end
 end
