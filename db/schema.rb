@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170119225635) do
+ActiveRecord::Schema.define(version: 20170120013920) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -33,6 +33,7 @@ ActiveRecord::Schema.define(version: 20170119225635) do
     t.datetime "github_created_at"
     t.datetime "created_at",        null: false
     t.datetime "updated_at",        null: false
+    t.index ["github_created_at", "user_id", "issue_id"], name: "github_created_at_uniqueness", unique: true, using: :btree
     t.index ["github_created_at"], name: "index_issue_comments_on_github_created_at", using: :btree
   end
 
