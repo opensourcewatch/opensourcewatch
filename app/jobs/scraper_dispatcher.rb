@@ -42,7 +42,7 @@ class ScraperDispatcher
     when "normal"
       RedisQueue.new(repos, queue_name: name, enqueue: enqueue)
     when "priority"
-      PriorityQueue.new(repos, queue_name: name, enqueue: enqueue, rescore: false)
+      PriorityQueue.new(repos, queue_name: name, enqueue: enqueue, rescore: true)
     when "circular"
       CircularRedisQueue.new(repos, queue_name: name, enqueue: enqueue)
     else
