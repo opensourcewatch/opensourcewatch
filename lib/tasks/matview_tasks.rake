@@ -1,4 +1,18 @@
-task :update_repo_activity_last_90_view => :environment do
-  require 'repo_activity_matview_last_90'
-  RepoActivityMatviewLast90.refresh
+task :refresh_matviews => :environment do
+  Matviews::IssueActivity::Last0.refresh;
+  Matviews::IssueActivity::Last7.refresh;
+  Matviews::IssueActivity::Last30.refresh;
+  Matviews::IssueActivity::Last90.refresh;
+  Matviews::RepoActivity::Last0.refresh;
+  Matviews::RepoActivity::Last7.refresh;
+  Matviews::RepoActivity::Last30.refresh;
+  Matviews::RepoActivity::Last90.refresh;
+  Matviews::TopUser::Last0.refresh;
+  Matviews::TopUser::Last7.refresh;
+  Matviews::TopUser::Last30.refresh;
+  Matviews::TopUser::Last90.refresh;
+  Matviews::ChattiestUser::Last0.refresh;
+  Matviews::ChattiestUser::Last7.refresh;
+  Matviews::ChattiestUser::Last30.refresh;
+  Matviews::ChattiestUser::Last90.refresh;
 end
