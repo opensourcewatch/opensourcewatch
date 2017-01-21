@@ -4,6 +4,7 @@ class DaemonTasks
   NODES = [
     ENV["DURENDAL_NODE"],
     ENV["GUNGNIR_NODE"],
+    ENV["MJOLNIR_NODE"],
     ENV["MIGL_NODE"],
     ENV["MIGL_TWO_NODE"],
     ENV["MIGL_THREE_NODE"]
@@ -125,8 +126,8 @@ class DaemonTasks
       'rake dispatch:scrape_issues'
     when 'metadata'
       'rake dispatch:scrape_metadata'
-    when 'scrape_once'
-      'rake dispatch:scrape_once'
+    when 'issues_and_commits'
+      'rake dispatch:scrape_issues_and_commits'
     end
   end
 

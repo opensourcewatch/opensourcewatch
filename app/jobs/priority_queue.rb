@@ -1,9 +1,15 @@
 # The priority queue is a queue of queues--not really a queue in and of itself
 class PriorityQueue
   PRIORITY_RANGE = (1..10).to_a
+  DEFAULT_BASE_NAME = ENV['REDIS_PRIORITY_QUEUE_BASE_NAME']
 
-  def initialize(repos = nil, enqueue: false, rescore: false)
-    @queue_base_name = ENV['REDIS_PRIORITY_QUEUE_BASE_NAME']
+  def initialize(repos = nil, queue_name: nil, enqueue: false, rescore: false)
+    if queue_name
+      @queue_base_name = queue_name
+    else
+      @queue_base_name = self.class::DEFAULT_BASE_NAME
+    end
+
     @repos = repos
     enqueue_redis(rescore) if enqueue
 

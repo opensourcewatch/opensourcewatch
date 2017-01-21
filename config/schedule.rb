@@ -19,24 +19,6 @@
 
 # Learn more: http://github.com/javan/whenever
 
-every 2.minutes do
-  runner "Matviews::IssueActivityLast0.refresh"
-  runner "Matviews::IssueActivityLast7.refresh"
-  runner "Matviews::IssueActivityLast30.refresh"
-  runner "Matviews::IssueActivityLast90.refresh"
-
-  runner "Matviews::RepoActivityLast0.refresh"
-  runner "Matviews::RepoActivityLast7.refresh"
-  runner "Matviews::RepoActivityLast30.refresh"
-  runner "Matviews::RepoActivityLast90.refresh"
-
-  runner "Matviews::TopUserLast0.refresh"
-  runner "Matviews::TopUserLast7.refresh"
-  runner "Matviews::TopUserLast30.refresh"
-  runner "Matviews::TopUserLast90.refresh"
-
-  runner "Matviews::ChattiestUserLast0.refresh"
-  runner "Matviews::ChattiestUserLast7.refresh"
-  runner "Matviews::ChattiestUserLast30.refresh"
-  runner "Matviews::ChattiestUserLast90.refresh"
+every 5.minutes do
+  rake "refresh_matviews"
 end
