@@ -13,64 +13,40 @@ class ScraperDispatcher
 
   @current_repo = nil
 
-  def self.prioritized_repos_activity
-    queue = PriorityQueue.new
+  def self.scrape(job: "commits", queue_type: "circular", repo_update: false)
+    @log_manager = LogManager.new(job)
 
+    queue = create_queue(queue_type)
     scraper_handler(queue) do
-      GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
-      GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
+      GithubRepoScraper.send(job, { repositories: [@current_repo] }, repo_update)
     end
   end
 
-
-  def self.scrape_commits
-    @log_manager = LogManager.new('commits')
-    queue = CircularRedisQueue.new
-    scraper_handler(queue) do
-      GithubRepoScraper.commits(repositories: [@current_repo])
-    end
-  end
-
-  def self.scrape_issues
-    @log_manager = LogManager.new('issues')
-
-    queue = CircularRedisQueue.new
-    scraper_handler(queue)  do
-      GithubRepoScraper.issues(repositories: [@current_repo])
-    end
-  end
-
-
+  # Only advantage over repo update above is it also grabs README
   def self.update_meta_data
     @log_manager = LogManager.new('metadata')
     queue = RedisQueue.new
     scraper_handler(queue) { GithubRepoScraper.update_repo_data([@current_repo]) }
   end
 
-  def self.scrape_once
-    @log_manager = LogManager.new('issues')
-    queue = RedisQueue.new
-
-    scraper_handler(queue) do
-      GithubRepoScraper.issues(repositories: [@current_repo])
-    end
-  end
-
   def self.enqueue(query: "stars > 10", limit: 100_000, type: "normal")
     repos = Repository.where(query).limit(limit)
+    create_queue(type, repos, enqueue: true)
+  end
 
+  private
+
+  def self.create_queue(type, repos: nil, enqueue: false)
     if type == "normal"
-      RedisQueue.new(repos, enqueue: true)
+      RedisQueue.new(repos, enqueue: enqueue)
     elsif type == "priority"
-      PriorityQueue.new(repos, enqueue: true)
+      PriorityQueue.new(repos, enqueue: enqueue)
     elsif type == "circular"
-      CircularRedisQueue.new(repos, enqueue: true)
+      CircularRedisQueue.new(repos, enqueue: enqueue)
     else
       raise Exception.new("Invalid queue type")
     end
   end
-
-  private
 
   def self.scraper_handler(queue)
     start_time = Time.now
