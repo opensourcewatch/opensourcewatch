@@ -4,6 +4,7 @@ class DaemonTasks
   NODES = [
     ENV["DURENDAL_NODE"],
     ENV["GUNGNIR_NODE"],
+    ENV["MJOLNIR_NODE"],
     ENV["MIGL_NODE"],
     ENV["MIGL_TWO_NODE"],
     ENV["MIGL_THREE_NODE"]
