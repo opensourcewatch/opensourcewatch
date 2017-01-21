@@ -13,10 +13,10 @@ class ScraperDispatcher
 
   @current_repo = nil
 
-  def self.scrape(job: "commits", queue_type: "circular", repo_update: false)
+  def self.scrape(job: "commits", queue_name: nil, queue_type: "circular", repo_update: false)
     @log_manager = LogManager.new(job)
 
-    queue = create_queue(queue_type)
+    queue = create_queue(queue_type, name: queue_name)
     scraper_handler(queue) do
       GithubRepoScraper.send(job, { repositories: [@current_repo] }, repo_update)
     end

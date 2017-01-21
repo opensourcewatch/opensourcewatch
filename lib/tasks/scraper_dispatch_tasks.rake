@@ -1,9 +1,9 @@
 # Get commit info from each repo using the redis queue
 namespace :dispatch do
 
-  task :priority_commits => :environment do |t|
+  task :priority_activity => :environment do |t|
     puts "Dispatching priority commits scraping pathway..."
-    ScraperDispatcher.scrape(queue_name: "prioritized_repositories")
+    ScraperDispatcher.scrape(job: 'issues_and_commits')
   end
 
   task :scrape_issues_and_commits => :environment do |t|

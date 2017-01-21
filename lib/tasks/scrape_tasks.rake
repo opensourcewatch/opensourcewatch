@@ -1,4 +1,4 @@
-# For local testing with small amounts of repos
+# NOTE: For local testing with small amounts of repos
 namespace :github do
   # Get github repo information for each repo
   task :repos => :environment do |t|
