@@ -49,6 +49,11 @@ class GithubRepoScraper
       end
     end
 
+    def issues_and_commits(scrape_limit_opts={}, get_repo_meta=false)
+      issues(scrape_limit_opts, get_repo_meta)
+      commits(scrape_limit_opts, get_repo_meta)
+    end
+
     # Retrieves the open issues and comments for each repository
     def issues(scrape_limit_opts={}, get_repo_meta=false)
       handle_scrape_limits(scrape_limit_opts)

@@ -2,10 +2,12 @@
 # the application.yaml file to read in nodes and store them as environment
 # variables on your local machine.
 
+# TODO: right now just appends to bashrc without checking if nodes already exist
 require 'yaml'
 
 lines = File.readlines('./config/application.yml')
 lines.each do |l|
+  next if l.chomp == "" || l[0] == '#'
   yaml_hash = YAML.load(l)
   key = yaml_hash.keys[0]
   value = yaml_hash[key]
