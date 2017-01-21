@@ -612,17 +612,29 @@ class GithubSearchWrapper
     def process_repos
       # TODO: Change this to upsert data
       puts "Processing #{@parsed_repos.count} Repositories."
-      repos = @parsed_repos.map do |repo|
-        Repository.new({
-          name: repo['name'],
-          github_id: repo['id'],
-          url: repo['html_url'],
-          language: repo['language'],
-          stars:  repo['stargazers_count'],
-          forks:  repo['forks']
-        })
+      @parsed_repos.each do |repo|
+        r = Repository.find_by(github_id: repo['id'])
+        if r
+          r.update({
+            name: repo['name'],
+            github_id: repo['id'],
+            url: repo['html_url'],
+            language: repo['language'],
+            stars:  repo['stargazers_count'],
+            forks:  repo['forks']
+          })
+        else
+          Repository.create({
+            name: repo['name'],
+            github_id: repo['id'],
+            url: repo['html_url'],
+            language: repo['language'],
+            stars:  repo['stargazers_count'],
+            forks:  repo['forks']
+          })
+        end
+        puts "Updated #{repo['name']}!"
       end
-      Repository.import(repos)
       puts "#{@repos_processed += @parsed_repos.count} Repositories Processed in #{minutes_running} minutes."
     end
 
