@@ -11,7 +11,6 @@ module Matviews::IssueActivity
     self.table_name = "issue_activity_matview_last_30"
   end
 
-
   class Last90 < Matviews::Matview
     self.table_name = "issue_activity_matview_last_90"
   end

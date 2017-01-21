@@ -52,16 +52,13 @@
             </tr>
           </thead>
           <tbody>
-            <tr> <td>1</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>2</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>3</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>4</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>5</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>6</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>7</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>8</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>9</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>10</td> <td>Lorem</td> <td>100</td> </tr>
+            <% @repos.each_with_index do |r, i| %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><%= r.name %></td>
+              <td><%= r.hit_count %></td>
+            </tr>
+            <% end %>
           </tbody>
         </table>
       </div>
@@ -77,16 +74,13 @@
             </tr>
           </thead>
           <tbody>
-            <tr> <td>1</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>2</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>3</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>4</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>5</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>6</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>7</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>8</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>9</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>10</td> <td>Lorem</td> <td>100</td> </tr>
+            <% @committers.each_with_index do |c, i| %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><%= c.github_username %></td>
+              <td><%= c.hit_count %></td>
+            </tr>
+            <% end %>
           </tbody>
         </table>
       </div>
@@ -99,21 +93,20 @@
           <thead>
             <tr>
               <th>Rank</th>
+              <th>Title</th>
+              <th>Comments</th>
               <th>Repository</th>
-              <th>Commits</th>
             </tr>
           </thead>
           <tbody>
-            <tr> <td>1</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>2</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>3</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>4</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>5</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>6</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>7</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>8</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>9</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>10</td> <td>Lorem</td> <td>100</td> </tr>
+            <% @issues.each_with_index do |issue, i| %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><%= issue.name %></td>
+              <td><%= issue.hit_count %></td>
+              <td><%= Repository.find(issue.repository_id).name %></td>
+            </tr>
+            <% end %>
           </tbody>
         </table>
       </div>
@@ -124,21 +117,18 @@
           <thead>
             <tr>
               <th>Rank</th>
-              <th>Commiter</th>
-              <th>Commits</th>
+              <th>User</th>
+              <th>Comments</th>
             </tr>
           </thead>
           <tbody>
-            <tr> <td>1</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>2</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>3</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>4</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>5</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>6</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>7</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>8</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>9</td> <td>Lorem</td> <td>100</td> </tr>
-            <tr> <td>10</td> <td>Lorem</td> <td>100</td> </tr>
+            <% @chatty.each_with_index do |user, i| %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><%= user.github_username %></td>
+              <td><%= user.hit_count %></td>
+            </tr>
+            <% end %>
           </tbody>
         </table>
       </div>
