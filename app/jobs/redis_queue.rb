@@ -1,9 +1,15 @@
 class RedisQueue
   DEFAULT_QUEUE_NAME = ENV['REDIS_QUEUE_NAME']
 
-  def initialize(repos = nil, queue_name: self.class::DEFAULT_QUEUE_NAME, enqueue: false)
+  def initialize(repos = nil, queue_name: nil, enqueue: false)
     @redis = RedisWrapper.new.redis
-    @queue_name = queue_name
+
+    if queue_name
+      @queue_name = queue_name
+    else
+      @queue_name = self.class::DEFAULT_QUEUE_NAME
+    end
+
     @repos = repos # Only needed for enqueing
 
     enqueue_redis if enqueue
