@@ -29,20 +29,22 @@ class ScraperDispatcher
     scraper_handler(queue) { GithubRepoScraper.update_repo_data([@current_repo]) }
   end
 
-  def self.enqueue(query: "stars > 10", limit: 100_000, type: "normal")
+  def self.enqueue(query: "stars > 10", limit: 100_000, type: "normal", name: nil)
     repos = Repository.where(query).limit(limit)
-    create_queue(type, repos, enqueue: true)
+
+    create_queue(type, repos: repos, name: name, enqueue: true)
   end
 
   private
 
-  def self.create_queue(type, repos: nil, enqueue: false)
-    if type == "normal"
-      RedisQueue.new(repos, enqueue: enqueue)
-    elsif type == "priority"
-      PriorityQueue.new(repos, enqueue: enqueue)
-    elsif type == "circular"
-      CircularRedisQueue.new(repos, enqueue: enqueue)
+  def self.create_queue(type, repos: nil, name: nil, enqueue: false)
+    case type
+    when "normal"
+      RedisQueue.new(repos, queue_name: name, enqueue: enqueue)
+    when "priority"
+      PriorityQueue.new(repos, queue_name: name, enqueue: enqueue, rescore: false)
+    when "circular"
+      CircularRedisQueue.new(repos, queue_name: name, enqueue: enqueue)
     else
       raise Exception.new("Invalid queue type")
     end
