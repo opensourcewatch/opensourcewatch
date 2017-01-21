@@ -23,9 +23,9 @@ class ScraperDispatcher
   end
 
   # Only advantage over repo update above is it also grabs README
-  def self.update_meta_data
+  def self.update_meta_data(queue_name: nil)
     @log_manager = LogManager.new('metadata')
-    queue = RedisQueue.new
+    queue = RedisQueue.new(name: queue_name)
     scraper_handler(queue) { GithubRepoScraper.update_repo_data([@current_repo]) }
   end
 
