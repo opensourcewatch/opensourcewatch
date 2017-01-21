@@ -1,7 +1,5 @@
 # Get commit info from each repo using the redis queue
 namespace :dispatch do
-  require_relative '../scraper/scraper_dispatcher'
-  require_relative '../scraper/github_repo_scraper'
 
   task :priority_commits => :environment do |t|
     puts "Dispatching priority commits scraping pathway..."
@@ -21,5 +19,10 @@ namespace :dispatch do
   task :scrape_metadata => :environment do |t|
     puts "Dispatching agent to work on blank repositories scraping metadata..."
     ScraperDispatcher.scrape_metadata
+  end
+
+  task :scrape_once => :environment do |t|
+    puts "Dispatching priority commits scraping pathway..."
+    ScraperDispatcher.scrape_once
   end
 end

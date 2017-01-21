@@ -31,13 +31,14 @@ class DaemonInterface
       restart_current_running_processes_option(parser)
       list_all_node_connections_option(parser)
       nodes_to_execute_on_option(parser)
+      pull_branch(parser)
     end
 
     private
 
     def start_executing_command_option(parser)
       parser.on('-s', '--start=PROCESS',
-                'Attempts to start executing the process on specified nodes. Options: commits, issues, metadata.'
+                'Attempts to start executing the process on specified nodes. Options: commits, issues, metadata, scrape_once.'
                ) do |s|
         self.options[:start] = s.downcase
       end
@@ -80,12 +81,18 @@ class DaemonInterface
         self.options[:nodes] = n[0].downcase == 'all' ? n : n.map(&:to_i)
       end
     end
+
+    def pull_branch(parser)
+      parser.on('-p', '--pullbranch=BRANCH', 'Pull updates on a specific branch.') do |branch|
+        self.options[:pull_branch] = branch
+      end
+    end
   end
 
   def initialize
     @parser = nil
     @options = nil
-    @valid_commands = [:start, :kill, :status, :restart, :list_nodes]
+    @valid_commands = [:start, :kill, :status, :restart, :list_nodes, :pull_branch]
   end
 
   def parse(args)
@@ -110,6 +117,8 @@ class DaemonInterface
   def send_command
     if command == @options.options[:start]
       @tasks.send(:start, command)
+    elsif command == @options.options[:pull_branch]
+      @tasks.send(:pull_branch, command)
     else
       @tasks.send(command)
     end
@@ -117,7 +126,7 @@ class DaemonInterface
 
   def command
     opts = @options.options
-    opts[:start] || opts[:kill] || opts[:status] || opts[:restart] || opts[:list_nodes]
+    opts[:start] || opts[:kill] || opts[:status] || opts[:restart] || opts[:list_nodes] || opts[:pull_branch]
   end
 
   def check_input
@@ -129,7 +138,7 @@ class DaemonInterface
   end
 
   def valid_process?
-    process_opts = ['commits', 'issues', 'metadata']
+    process_opts = ['commits', 'issues', 'metadata', 'scrape_once']
     start_option = @options.options[:start]
     if start_option && !process_opts.include?(start_option)
       raise ArgumentError.new("PROCESS option must be one of the following: " + process_opts.to_s)

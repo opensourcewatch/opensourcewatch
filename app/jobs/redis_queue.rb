@@ -1,7 +1,7 @@
-require_relative "redis_wrapper"
-
 class RedisQueue
-  def initialize(repos = nil, queue_name: ENV['REDIS_QUEUE_NAME'], enqueue: false)
+  DEFAULT_QUEUE_NAME = ENV['REDIS_QUEUE_NAME']
+
+  def initialize(repos = nil, queue_name: self.class::DEFAULT_QUEUE_NAME, enqueue: false)
     @redis = RedisWrapper.new.redis
     @queue_name = queue_name
     @repos = repos # Only needed for enqueing
@@ -10,6 +10,7 @@ class RedisQueue
   end
 
   def enqueue_redis
+    clear_queue
     # Insert into redis. The left side of the queue is the high side
     @redis.pipelined do
       @repos.each do |repo|
@@ -23,7 +24,7 @@ class RedisQueue
         # Use the priority value as the initial score
         add(member)
       end
-      puts "#{@repos.count} repos enqueued."
+      puts "#{@repos.count} repos enqueued"
     end
   end
 
@@ -33,6 +34,10 @@ class RedisQueue
   end
 
   private
+
+  def clear_queue
+    @redis.del(@queue_name)
+  end
 
   def add(member)
     @redis.rpush @queue_name, member

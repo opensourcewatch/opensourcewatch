@@ -1,8 +1,8 @@
-require_relative '../log_manager/log_manager'
+require_relative '../../lib/log_manager/log_manager'
 require_relative 'github_repo_scraper'
-require_relative '../redis/circular_redis_queue'
-require_relative '../redis/priority_queue'
-require_relative '../redis/redis_queue'
+require_relative 'circular_redis_queue'
+require_relative 'priority_queue'
+require_relative 'redis_queue'
 
 class ScraperDispatcher
   # Dispatches scrapers to use various redis queues and scrape for different
@@ -13,38 +13,61 @@ class ScraperDispatcher
 
   @current_repo = nil
 
-  def self.prioritized_repos_activity(enqueue: false, query: "stars > 10000", commits_on: true, issues_on: false)
-    queue = PriorityQueue.new(enqueue: enqueue, query: query)
+  def self.prioritized_repos_activity
+    queue = PriorityQueue.new
+
     scraper_handler(queue) do
       GithubRepoScraper.commits(repositories: [@current_repo]) if commits_on
       GithubRepoScraper.issues(repositories: [@current_repo]) if issues_on
     end
   end
 
-  def self.scrape_commits(enqueue: false, query: "stars > 10")
+
+  def self.scrape_commits
     @log_manager = LogManager.new('commits')
-    repos = Repository.where(query) if enqueue
-    queue = CircularRedisQueue.new(repos, enqueue: enqueue)
+    queue = CircularRedisQueue.new
     scraper_handler(queue) do
       GithubRepoScraper.commits(repositories: [@current_repo])
     end
   end
 
-  def self.scrape_issues(enqueue: false, query: "stars > 10")
+  def self.scrape_issues
     @log_manager = LogManager.new('issues')
-    repos = Repository.where(query) if enqueue
-    queue = CircularRedisQueue.new(repos, enqueue: enqueue)
+
+    queue = CircularRedisQueue.new
     scraper_handler(queue)  do
       GithubRepoScraper.issues(repositories: [@current_repo])
     end
   end
 
-  def self.update_meta_data(enqueue: false, query: "stars IS_NULL")
+
+  def self.update_meta_data
     @log_manager = LogManager.new('metadata')
-    repos = Repository.where(query) if enqueue
-    queue = RedisQueue.new(repos, enqueue: enqueue)
-    # TODO: Debug and test the update repo data method on github scraper
+    queue = RedisQueue.new
     scraper_handler(queue) { GithubRepoScraper.update_repo_data([@current_repo]) }
+  end
+
+  def self.scrape_once
+    @log_manager = LogManager.new('issues')
+    queue = RedisQueue.new
+
+    scraper_handler(queue) do
+      GithubRepoScraper.issues(repositories: [@current_repo])
+    end
+  end
+
+  def self.enqueue(query: "stars > 10", limit: 100_000, type: "normal")
+    repos = Repository.where(query).limit(limit)
+
+    if type == "normal"
+      RedisQueue.new(repos, enqueue: true)
+    elsif type == "priority"
+      PriorityQueue.new(repos, enqueue: true)
+    elsif type == "circular"
+      CircularRedisQueue.new(repos, enqueue: true)
+    else
+      raise Exception.new("Invalid queue type")
+    end
   end
 
   private

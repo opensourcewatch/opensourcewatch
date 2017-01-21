@@ -1,18 +1,28 @@
-require_relative './noko_doc'
-
 # Scrapes data for Repositories and Users on Github.com
 class GithubRepoScraper
+  SECONDS_BETWEEN_REQUESTS = 0
+  BASE_URL = "https://github.com"
+
   @github_doc = NokoDoc.new
   @current_repo = nil
-  SECONDS_BETWEEN_REQUESTS = 0
-  @BASE_URL = "https://github.com"
+
   @commits_created_this_session = 0
   @start_time = Time.now
 
+  # Commits that will be bulk imported
+  @stashed_commits = []
+
+  # TODO: Investigate and add error handling for 404/500 from github so the error
+  # is logged but doesn't just crash
   # TODO: add check so that these methods don't necessarily take and active record
   # model, because we don't want to hit the db everytime in the dispatcher
   # TODO: we could pass in a shallow repository model and only actually find the model
   # if we need to associate a commit, or actually do an update etc.
+  # TODO: We should probably check yesterdays commits when we scrape commits to
+  # make sure we didn’t miss any. There is a chance that in the last 8 hours of
+  # the day, if there is a commit we won’t get it.
+  # TODO: Add a column for the *day* the commits were pushed to github and modify
+  # the scraper to get this data
   class << self
     # Gets the following:
     # - number of stars the project has
@@ -43,8 +53,9 @@ class GithubRepoScraper
     def issues(scrape_limit_opts={}, get_repo_meta=false)
       handle_scrape_limits(scrape_limit_opts)
 
+      @comments_cache = []
       @repositories.each do |repo|
-        break unless get_repo_doc(repo, "/issues")
+        break unless get_repo_doc(repo, "/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc")
 
         update_repo_meta if get_repo_meta
 
@@ -55,6 +66,8 @@ class GithubRepoScraper
           raw_issues = @github_doc.doc.css("div.issues-listing ul li div.d-table")
 
           raw_issues.each do |raw_issue|
+            built_issue = build_issue(raw_issue)
+            next if built_issue.nil?
             issue = Issue.create( build_issue(raw_issue) )
             puts "Creating Issue" if issue.id
 
@@ -64,7 +77,8 @@ class GithubRepoScraper
           next_url_anchor = @github_doc.doc.css("a.next_page")
           if next_url_anchor.present?
             next_url_rel_path = next_url_anchor.attribute("href").value
-            @github_doc.new_doc(@BASE_URL + next_url_rel_path)
+
+            break unless @github_doc.new_doc(BASE_URL + next_url_rel_path)
           else
             break
           end
@@ -72,18 +86,27 @@ class GithubRepoScraper
 
         # Get all the comments for each issue
         issues.each do |issue|
-          doc_path = @BASE_URL + issue.url
-          @github_doc.new_doc(doc_path)
+          doc_path = BASE_URL + issue.url
+          next unless @github_doc.new_doc(doc_path)
 
           raw_comments = @github_doc.doc.css("div.timeline-comment-wrapper")
 
           raw_comments.each do |raw_comment|
             comment_json = build_comment(raw_comment)
-            comment_json['issue_id'] = issue
+            comment_json['issue_id'] = issue.id
+            @comments_cache << IssueComment.new(comment_json)
 
-            issue_comment = IssueComment.create(comment_json)
-            puts "Creating Issue Comment" if issue_comment
           end
+          if @comments_cache.count > 30
+            require 'benchmark'
+            b = Benchmark.measure do
+              IssueComment.import(@comments_cache)
+            end
+            puts "Time to create #{@comments_cache.count} Issue Comments with bulk import after pushing validation into DB\n\n"
+            puts "\t #{b.real}"
+            @comments_cache.clear
+          end
+
         end
       end
     end
@@ -123,7 +146,7 @@ class GithubRepoScraper
     # Basically let's make that query when we get the repo.
     def build_comment(raw_comment)
       user_name = raw_comment.css("a.author").text
-      user = User.find_by(github_username: user_name)
+      user = User.find_by(github_username: user_name) # TODO: use create! and if it fails, a rescue and find ?
       unless user
         puts "Creating new user: #{user_name}"
         user = User.create(github_username: user_name)
@@ -137,6 +160,10 @@ class GithubRepoScraper
     end
 
     def build_issue(raw_issue)
+      last_update_str = raw_issue.css('span.issue-meta-section.ml-2 relative-time')[0]['datetime']
+      last_update = Time.parse(last_update_str)
+      return nil if last_update < Date.today - 90
+
       issue = {}
       issue['repository_id'] = @current_repo.id
 
@@ -145,6 +172,9 @@ class GithubRepoScraper
       issue['url'] = raw_issue.css("a.h4").attribute("href").value
 
       issue_number, open_date, creator = raw_issue.css("span.opened-by").text.strip.split("\n")
+      # NOTE: When we want to make open_date a string
+      # date_str = raw_issue.css('span.opened-by relative-time').first['datetime']
+      # open_date = Time.parse(date_str)
 
       issue['issue_number'] = issue_number[1..-1].to_i
       issue['creator'] = creator.strip
@@ -157,10 +187,12 @@ class GithubRepoScraper
       @current_repo = repo
       # TODO: consider making a psuedo object to pass around
       doc_path = @current_repo.url + path
+
       return @github_doc.new_doc(doc_path)
     end
 
     def update_repo_meta(get_readme = false)
+      # TODO: this isn't working rigt now... fix so we grab the readme
       if get_readme
         readme_content = repo_readme_content
       else
@@ -197,24 +229,23 @@ class GithubRepoScraper
 
         sleep SECONDS_BETWEEN_REQUESTS
 
-        break unless @github_doc.new_doc(@BASE_URL + next_path)
+        break unless @github_doc.new_doc(BASE_URL + next_path)
       end
     end
 
     def fetch_commit_data
       @github_doc.doc.css('.commit').each do |commit_info|
-        commit_date = Time.parse(commit_info.css('relative-time')[0][:datetime])
-        throw :recent_commits_finished unless commit_date.today?
+        relative_time = commit_info.css('relative-time')
+        next if relative_time.empty?
+        commit_date = Time.parse(relative_time[0][:datetime])
+        throw :recent_commits_finished unless commit_date.to_date >= last_90_days # for today: commit_date.today?
 
         # Not all avatars are users
         user_anchor = commit_info.css('.commit-avatar-cell a')[0]
         github_username = user_anchor['href'][1..-1] if user_anchor
 
-        if !github_username.nil? && !User.exists?(github_username: github_username)
-          user = User.create(github_username: github_username)
-          puts "User CREATE github_username:#{user.github_username}"
-        elsif !github_username.nil?
-          user = User.find_by(github_username: github_username)
+        if !github_username.nil?
+          user = User.find_or_create_by(github_username: github_username)
         end
 
         if user
@@ -222,16 +253,20 @@ class GithubRepoScraper
           github_identifier = commit_info.css("a.sha").text.strip
           github_created_at = DateTime.parse(commit_info.css("relative-time").first['datetime'])
 
-          unless Commit.exists?(github_identifier: github_identifier)
-            Commit.create(
-              message: message,
-              user: user,
-              repository: @current_repo,
-              github_identifier: github_identifier,
-              github_created_at: github_created_at
-              )
-            @commits_created_this_session += 1
-            puts "Commit CREATE identifier:#{github_identifier} by #{user.github_username}"
+          @stashed_commits.push Commit.new({
+                                  message: message,
+                                  user: user,
+                                  repository: @current_repo,
+                                  github_identifier: github_identifier,
+                                  github_created_at: github_created_at
+                                })
+
+          if @stashed_commits.count >= 30
+            @commits_created_this_session += 30
+
+            Commit.import(@stashed_commits)
+
+            @stashed_commits.clear
             puts "Commits cretaed this session: #{@commits_created_this_session}"
             puts "Total time so far: #{((Time.now - @start_time) / 60).round(2)}"
           end
@@ -239,6 +274,14 @@ class GithubRepoScraper
 
         throw :scrape_limit_reached if User.count >= @user_limit
       end
+    end
+
+    def last_years_time
+      DateTime.now - 365
+    end
+
+    def last_90_days
+      DateTime.now - 90
     end
 
     def repo_readme_content

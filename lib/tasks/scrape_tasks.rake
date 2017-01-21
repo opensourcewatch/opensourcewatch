@@ -1,8 +1,5 @@
 # For local testing with small amounts of repos
 namespace :github do
-  require_relative "../scraper/github_repo_scraper"
-  require_relative "../scraper/github_user_scraper"
-
   # Get github repo information for each repo
   task :repos => :environment do |t|
     babysitter(t) do

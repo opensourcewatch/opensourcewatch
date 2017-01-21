@@ -1,5 +1,3 @@
-require_relative './noko_doc'
-
 # TODO: test taht still functions after being extracted
 class GithubUserScraper
   @github_doc = NokoDoc.new

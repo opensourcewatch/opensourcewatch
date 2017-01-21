@@ -1,10 +1,11 @@
-# The priority queue is a queue of queues
+# The priority queue is a queue of queues--not really a queue in and of itself
 class PriorityQueue
   PRIORITY_RANGE = (1..10).to_a
 
-  def initialize(enqueue: false, query: "stars > 10000", rescore: false)
+  def initialize(repos = nil, enqueue: false, rescore: false)
     @queue_base_name = ENV['REDIS_PRIORITY_QUEUE_BASE_NAME']
-    enqueue_redis(query, rescore) if enqueue
+    @repos = repos
+    enqueue_redis(rescore) if enqueue
 
     @unique_queues = generate_queues
     @queues = skewed_dist_of_queues(@unique_queues)
@@ -18,16 +19,13 @@ class PriorityQueue
     queue.next
   end
 
-  def enqueue_redis(query, rescore)
-    tracked_repos = Repository.where(query)
-    puts "Retrieved #{tracked_repos.count} repositories"
-
+  def enqueue_redis(rescore)
     puts "Scoring and ordering..."
-    calculate_scores(tracked_repos) if rescore
-    tracked_repos = tracked_repos.order(:score)
+    calculate_scores if rescore
+    scored_repos = @repos.order(:score)
 
     puts "Creating prioritized queues..."
-    enqueue_prioritized_sub_queues(tracked_repos)
+    enqueue_prioritized_sub_queues(scored_repos)
   end
 
   private
@@ -37,7 +35,7 @@ class PriorityQueue
 
     # Enqueue a sub queue for each priority level
     index = 0
-    tracked_repos.in_batches(of: bucket_size) do |batch|
+    tracked_repos.in_groups_of(bucket_size, false) do |batch|
       priority = PRIORITY_RANGE[index]
       queue_name = sub_queue_name(priority.to_s)
       index += 1
@@ -50,13 +48,11 @@ class PriorityQueue
   # For enqueing
   def calculate_scores
     count = 0
-    tracked_repos.in_batches do |batch|
-      batch.each do |repo|
-        repo.update_score
-        count += 1
-        puts "#{count} repos scored"
-      end
+    @repos.each do |repo|
+      repo.update_score
+      count += 1
     end
+    puts "#{count} repos scored"
   end
 
   # For operation
