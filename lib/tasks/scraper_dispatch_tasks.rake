@@ -6,7 +6,7 @@ namespace :dispatch do
     ScraperDispatcher.scrape(queue_name: "prioritized_repositories")
   end
 
-  task :scrape_issues_and_commits => environment do |t|
+  task :scrape_issues_and_commits => :environment do |t|
     ScraperDispatcher.scrape(job: 'issues_and_commits')
   end
 
