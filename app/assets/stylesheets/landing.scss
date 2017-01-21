@@ -1,0 +1,56 @@
+// .row > div.col {
+//   margin-right: 8.3%;
+// }
+
+table.bordered tbody tr:last-of-type {
+  border-bottom: 0px none;
+}
+
+h3 {
+  height: 90px;
+}
+
+.col {
+  margin-top: 40px;
+}
+
+h1 {
+  background-color: blue;
+}
+
+main .row .col.l5,
+main .row .col.m5 {
+  margin-top: 10px;
+  margin-left: 4.16666667%;
+  margin-right: 4.16666667%;
+}
+
+@media only screen and (max-width: 720px) {
+  main .row .col.s12 {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+}
+
+table.centered tr td {
+  font-size: 1.1em;
+}
+
+.row:last-of-type {
+  margin-bottom: 33px;
+}
+
+.tabs {
+  overflow-x: hidden;
+}
+
+.pinned {
+  position: fixed !important;
+  background-color: white;
+  width: 100%;
+}
+
+#description {
+  font-size: 1.2em;
+}
