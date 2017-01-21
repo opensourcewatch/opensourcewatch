@@ -10,7 +10,6 @@ class Matviews::RepoActivityLast30 < Matviews::Matview
   self.table_name = "repo_activity_matview_last_30"
 end
 
-
 class Matviews::RepoActivityLast90 < Matviews::Matview
   self.table_name = "repo_activity_matview_last_90"
 end

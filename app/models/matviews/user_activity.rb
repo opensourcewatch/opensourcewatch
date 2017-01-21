@@ -1,4 +1,3 @@
-
 class Matviews::TopUserLast0 < Matviews::Matview
   self.table_name = "top_users_matview_last_0"
 end
