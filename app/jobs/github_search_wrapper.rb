@@ -444,6 +444,7 @@ class GithubSearchWrapper
 
   @lang_length = @languages.count
   @curr_lang_count = 0
+  @query_by_language = false
 
   class << self
     def paginate_repos(skip_to_star: nil)
@@ -464,7 +465,7 @@ class GithubSearchWrapper
           puts "Search request to #{@current_url}"
 
           if rate_requests_remain?
-            @query_by_language ? handle_stars_and_languages : handle_stars_request
+            handle_request
           else
             break
           end
@@ -492,8 +493,10 @@ class GithubSearchWrapper
     def handle_request
       if @first_round_of_pagination
         handle_first_round_of_pagination
-      else
+      elsif !@query_by_language
         handle_stars_request
+      else
+        handle_stars_and_languages
       end
     end
 
