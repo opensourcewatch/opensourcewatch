@@ -38,6 +38,10 @@ table.centered tr td {
   font-size: 1.1em;
 }
 
+table.centered tr td a {
+  color: inherit;
+}
+
 .row:last-of-type {
   margin-bottom: 33px;
 }
