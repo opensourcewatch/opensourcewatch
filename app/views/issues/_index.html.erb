@@ -1,0 +1,8 @@
+<% @issues.each_with_index do |issue, i| %>
+<tr>
+  <td><%= i + 1 %></td>
+  <td><%= issue.name %></td>
+  <td><%= issue.hit_count %></td>
+  <td><%= Repository.find(issue.repository_id).name %></td>
+</tr>
+<% end %>

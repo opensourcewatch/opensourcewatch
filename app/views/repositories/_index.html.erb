@@ -1,0 +1,7 @@
+<% @repos.each_with_index do |repo, i| %>
+<tr>
+  <td><%= i + 1 %></td>
+  <td><%= repo.name %></td>
+  <td><%= repo.hit_count %></td>
+</tr>
+<% end %>
