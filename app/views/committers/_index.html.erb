@@ -1,7 +1,8 @@
 <% @committers.each_with_index do |committer, i| %>
 <tr>
   <td><%= i + 1 %></td>
-  <td><%= committer.github_username %></td>
+  <% username = committer.github_username %>
+  <td><%= link_to username, "https://github.com/#{username}" %></td>
   <td><%= committer.hit_count %></td>
 </tr>
 <% end %>

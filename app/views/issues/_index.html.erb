@@ -1,8 +1,9 @@
 <% @issues.each_with_index do |issue, i| %>
 <tr>
   <td><%= i + 1 %></td>
-  <td><%= issue.name %></td>
+  <td><%= link_to issue.name, "https://github.com#{issue.url}" %></td>
   <td><%= issue.hit_count %></td>
-  <td><%= Repository.find(issue.repository_id).name %></td>
+  <% r = Repository.find(issue.repository_id) %>
+  <td><%= link_to r.name, r.url %></td>
 </tr>
 <% end %>
