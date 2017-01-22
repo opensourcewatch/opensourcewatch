@@ -13,12 +13,11 @@ class LandingController < ApplicationController
   private
 
   def set_activity_vars
-    Rails.application.eager_load!
     postfix = date_range_postfix
-    @repos = Module.const_get("Matviews::RepoActivity#{postfix}").limit(10)
-    @committers = Module.const_get("Matviews::TopUser#{postfix}").limit(10)
-    @issues = Module.const_get("Matviews::IssueActivity#{postfix}").limit(10)
-    @chatties = Module.const_get("Matviews::ChattiestUser#{postfix}").limit(10)
+    @repos = Module.const_get("Matviews::RepoActivity::#{postfix}").limit(10)
+    @committers = Module.const_get("Matviews::TopUser::#{postfix}").limit(10)
+    @issues = Module.const_get("Matviews::IssueActivity::#{postfix}").limit(10)
+    @chatties = Module.const_get("Matviews::ChattiestUser::#{postfix}").limit(10)
   end
 
   def date_range_postfix
