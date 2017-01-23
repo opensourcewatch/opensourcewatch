@@ -103,12 +103,7 @@ class GithubRepoScraper
 
           end
           if @comments_cache.count > 30
-            require 'benchmark'
-            b = Benchmark.measure do
-              IssueComment.import(@comments_cache)
-            end
-            puts "Time to create #{@comments_cache.count} Issue Comments with bulk import after pushing validation into DB\n\n"
-            puts "\t #{b.real}"
+            IssueComment.import(@comments_cache)
             @comments_cache.clear
           end
 
