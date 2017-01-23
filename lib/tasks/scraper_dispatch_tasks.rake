@@ -30,4 +30,8 @@ namespace :dispatch do
     # TODO: fix to match queue type
     ScraperDispatcher.scrape_once
   end
+
+  task :requeue, [:type, :query] => :environment do |t, args|
+   ScraperDispatcher.enqueue(type: args[:type], query: args[:query])
+  end
 end
