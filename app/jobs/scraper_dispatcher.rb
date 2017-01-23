@@ -30,7 +30,7 @@ class ScraperDispatcher
   end
 
   def self.enqueue(query: "stars > 10", limit: 100_000, type: "normal", name: nil)
-    repos = Repository.where(query).limit(limit)
+    repos = Repository.where(query).order('stars DESC').limit(limit)
 
     create_queue(type, repos: repos, name: name, enqueue: true)
   end
