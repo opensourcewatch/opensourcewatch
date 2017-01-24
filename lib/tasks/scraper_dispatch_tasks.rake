@@ -28,7 +28,7 @@ namespace :dispatch do
   task :scrape_once => :environment do |t|
     puts "Dispatching priority commits scraping pathway..."
     # TODO: fix to match queue type
-    ScraperDispatcher.scrape(job: 'issues_and_commits', queue_type: 'normal')
+    ScraperDispatcher.scrape(job: 'issues', queue_type: 'normal')
   end
 
   task :requeue, [:type, :query] => :environment do |t, args|
