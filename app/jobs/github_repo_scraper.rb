@@ -96,7 +96,6 @@ class GithubRepoScraper
             #   i.url = built_issue['url']
             #   i.open_date = built_issue['open_date']
             # end
-            puts "Creating Issue" if issue.id
 
             issues << issue
           end

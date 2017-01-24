@@ -31,7 +31,7 @@ namespace :dispatch do
     ScraperDispatcher.scrape(job: 'issues', queue_type: 'normal')
   end
 
-  task :requeue, [:type, :query] => :environment do |t, args|
-   ScraperDispatcher.enqueue(type: args[:type], query: args[:query])
+  task :requeue, [:type] => :environment do |t, args|
+   ScraperDispatcher.enqueue(type: args[:type])
   end
 end
