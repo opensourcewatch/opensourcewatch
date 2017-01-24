@@ -171,14 +171,14 @@ class GithubRepoScraper
       issue['creator'] = raw_issue.css("a.h4")
       issue['url'] = raw_issue.css("a.h4").attribute("href").value
 
-      issue_number, open_date, creator = raw_issue.css("span.opened-by").text.strip.split("\n")
-      # NOTE: When we want to make open_date a string
-      # date_str = raw_issue.css('span.opened-by relative-time').first['datetime']
-      # open_date = Time.parse(date_str)
+      opened_by = raw_issue.css('span.opened-by')
+      issue_number = opened_by.text.strip.split("\n").first
+      creator = opened_by.text.strip.split("\n").last
+      date_str = opened_by.css('relative-time').first['datetime']
 
       issue['issue_number'] = issue_number[1..-1].to_i
       issue['creator'] = creator.strip
-      issue['open_date'] = open_date.split(" ")[1..-2].join(" ")
+      issue['open_date'] = Time.parse(date_str)
 
       issue
     end
