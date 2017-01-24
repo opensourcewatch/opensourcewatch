@@ -38,7 +38,7 @@ table.centered tr td a {
   color: inherit;
 }
 
-.row:last-of-type {
+main .row:last-of-type {
   margin-bottom: 33px;
 }
 
@@ -46,12 +46,13 @@ table.centered tr td a {
   overflow-x: hidden;
 }
 
-header .pushpin-date-range-row .col {
-  margin-top: 0px;
+header .pushpin-date-range-row {
+  padding-top: 12px;
+  margin-bottom: 0px;
 }
 
-header .pushpin-date-range-row {
-  margin-top: 12px;
+header .pushpin-date-range-row .col {
+  margin-top: 0px;
 }
 
 header .pushpin-date-range-row a {
