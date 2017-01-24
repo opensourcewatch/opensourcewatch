@@ -73,7 +73,15 @@ class GithubRepoScraper
           raw_issues.each do |raw_issue|
             built_issue = build_issue(raw_issue)
             next if built_issue.nil?
-            issue = Issue.create( build_issue(raw_issue) )
+            issue = Issue.find_or_create_by(
+              repository_id: built_issue['repository_id'],
+              issue_number: built_issue['issue_number']
+            ) do |i| # TODO: consider making repository_id + issue_number an index
+              i.name = built_issue['name']
+              i.creator = built_issue['creator']
+              i.url = built_issue['url']
+              i.open_date = built_issue['open_date']
+            end
             puts "Creating Issue" if issue.id
 
             issues << issue
