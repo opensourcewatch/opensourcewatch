@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170124071644) do
+ActiveRecord::Schema.define(version: 20170124202438) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -46,6 +46,7 @@ ActiveRecord::Schema.define(version: 20170124071644) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.datetime "open_date"
+    t.index ["issue_number", "repository_id"], name: "index_issues_on_issue_number_and_repository_id", using: :btree
   end
 
   create_table "repositories", force: :cascade do |t|
