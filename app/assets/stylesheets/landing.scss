@@ -72,11 +72,24 @@ header .pushpin-date-range-row .tabs .indicator {
   background-color: #00bfa5;
 }
 
-.pinned {
+header .pushpin-date-range-row.pinned {
   position: fixed !important;
-  background-color: white;
   width: 100%;
   padding-top: 16px;
+}
+
+header .pushpin-date-range-row.pinned,
+header .pushpin-date-range-row.pinned ul {
+  background-color: #00bfa5 !important;
+}
+
+header .pinned a,
+header .pinned.pushpin-date-range-row .tabs .indicator {
+  color: #e0f2f1 !important;
+}
+
+header .pinned.pushpin-date-range-row .tabs .indicator {
+  background-color: #e0f2f1 !important;
 }
 
 #description {
