@@ -170,7 +170,7 @@ class GithubRepoScraper
     def build_issue(raw_issue)
       last_update_str = raw_issue.css('span.issue-meta-section.ml-2 relative-time')[0]['datetime']
       last_update = Time.parse(last_update_str)
-      return nil if last_update < Date.today - 90
+      return nil unless last_update >= last_week
 
       issue = {}
       issue['repository_id'] = @current_repo.id
@@ -246,7 +246,7 @@ class GithubRepoScraper
         relative_time = commit_info.css('relative-time')
         next if relative_time.empty?
         commit_date = Time.parse(relative_time[0][:datetime])
-        throw :recent_commits_finished unless commit_date.to_date >= last_90_days # for today: commit_date.today?
+        throw :recent_commits_finished unless commit_date.to_date >= last_week # for today: commit_date.today?
 
         # Not all avatars are users
         user_anchor = commit_info.css('.commit-avatar-cell a')[0]
