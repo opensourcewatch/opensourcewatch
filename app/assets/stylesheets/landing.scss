@@ -47,8 +47,17 @@ main .row:last-of-type {
 }
 
 header .pushpin-date-range-row {
-  padding-top: 12px;
   margin-bottom: 0px;
+}
+
+header .pushpin-date-range-row,
+header .pushpin-date-range-row ul {
+  @extend .teal, .lighten-5;
+}
+
+header .pushpin-date-range-row ul {
+  height: 100%;
+  padding: 8px 0;
 }
 
 header .pushpin-date-range-row .col {
@@ -67,6 +76,7 @@ header .pushpin-date-range-row .tabs .indicator {
   position: fixed !important;
   background-color: white;
   width: 100%;
+  padding-top: 16px;
 }
 
 #description {
