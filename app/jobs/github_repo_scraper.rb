@@ -276,12 +276,21 @@ class GithubRepoScraper
       end
     end
 
-    def last_years_time
-      DateTime.now - 365
+    # NOTE: This is rails specific!
+    def last_90_days
+      3.month.ago
     end
 
-    def last_90_days
-      DateTime.now - 90
+    def last_month
+      1.month.ago
+    end
+
+    def last_week
+      1.week.ago
+    end
+
+    def today?
+      1.day.ago
     end
 
     def repo_readme_content
