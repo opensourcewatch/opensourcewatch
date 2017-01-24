@@ -73,15 +73,29 @@ class GithubRepoScraper
           raw_issues.each do |raw_issue|
             built_issue = build_issue(raw_issue)
             next if built_issue.nil?
-            issue = Issue.find_or_create_by(
+
+            # FIXME: the code below will be replace be code below below after
+            #       through once of to get open_date
+            issue = Issue.find_by(
               repository_id: built_issue['repository_id'],
               issue_number: built_issue['issue_number']
-            ) do |i| # TODO: consider making repository_id + issue_number an index
-              i.name = built_issue['name']
-              i.creator = built_issue['creator']
-              i.url = built_issue['url']
-              i.open_date = built_issue['open_date']
+            )
+            if issue
+              issue.update(open_date: built_issue['open_date'])
+            else
+              issue = Issue.create(built_issue)
             end
+
+            # FIXME: The code below will replace above after we update open_date
+            # issue = Issue.find_or_create_by(
+            #   repository_id: built_issue['repository_id'],
+            #   issue_number: built_issue['issue_number']
+            # ) do |i| # TODO: consider making repository_id + issue_number an index
+            #   i.name = built_issue['name']
+            #   i.creator = built_issue['creator']
+            #   i.url = built_issue['url']
+            #   i.open_date = built_issue['open_date']
+            # end
             puts "Creating Issue" if issue.id
 
             issues << issue
@@ -97,25 +111,26 @@ class GithubRepoScraper
           end
         end
 
+        # FIXME: temporary comment out because we are just updating issue open_date
         # Get all the comments for each issue
-        issues.each do |issue|
-          doc_path = BASE_URL + issue.url
-          next unless @github_doc.new_doc(doc_path)
-
-          raw_comments = @github_doc.doc.css("div.timeline-comment-wrapper")
-
-          raw_comments.each do |raw_comment|
-            comment_json = build_comment(raw_comment)
-            comment_json['issue_id'] = issue.id
-            @comments_cache << IssueComment.new(comment_json)
-
-          end
-          if @comments_cache.count > 30
-            IssueComment.import(@comments_cache)
-            @comments_cache.clear
-          end
-
-        end
+        # issues.each do |issue|
+        #   doc_path = BASE_URL + issue.url
+        #   next unless @github_doc.new_doc(doc_path)
+        #
+        #   raw_comments = @github_doc.doc.css("div.timeline-comment-wrapper")
+        #
+        #   raw_comments.each do |raw_comment|
+        #     comment_json = build_comment(raw_comment)
+        #     comment_json['issue_id'] = issue.id
+        #     @comments_cache << IssueComment.new(comment_json)
+        #
+        #   end
+        #   if @comments_cache.count > 30
+        #     IssueComment.import(@comments_cache)
+        #     @comments_cache.clear
+        #   end
+        #
+        # end
       end
     end
 
