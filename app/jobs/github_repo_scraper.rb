@@ -104,12 +104,17 @@ class GithubRepoScraper
 
           raw_comments = @github_doc.doc.css("div.timeline-comment-wrapper")
 
+          freshest_comment = issue.issue_comments.order("github_created_at DESC").first
           raw_comments.each do |raw_comment|
+            unless freshest_comment.nil?
+              next if comment_outside_time_range?(raw_comment, freshest_comment)
+            end
+
             comment_json = build_comment(raw_comment)
             comment_json['issue_id'] = issue.id
             @comments_cache << IssueComment.new(comment_json)
-
           end
+
           if @comments_cache.count > 30
             IssueComment.import(@comments_cache)
             @comments_cache.clear
@@ -117,6 +122,12 @@ class GithubRepoScraper
 
         end
       end
+    end
+
+    def comment_outside_time_range?(raw_comment, issue_comment)
+      time = Time.parse(raw_comment.css("a relative-time").attribute("datetime").value)
+      time_limit = issue_comment.github_created_at
+      time <= time_limit
     end
 
     # Retrieves the commits for each Repository
