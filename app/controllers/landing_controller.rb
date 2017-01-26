@@ -22,13 +22,13 @@ class LandingController < ApplicationController
 
   def date_range_postfix
     case params['date_range']
-    when 'Today'
+    when 'today'
       'Last0'
-    when 'Weekly'
+    when 'weekly'
       'Last7'
-    when 'Monthly'
+    when 'monthly'
       'Last30'
-    when 'Last 90'
+    when 'last 90'
       'Last90'
     else
       'Last0'
