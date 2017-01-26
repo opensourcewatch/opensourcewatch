@@ -1,32 +1,18 @@
 <header>
   <nav>
     <div class="nav-wrapper">
-      <a href="#!" class="brand-logo center">OpenSource Watch</a>
+      <a href="#!" class="brand-logo center">Open-Source Watch</a>
     </div>
   </nav>
 
-  <div class="container">
-    <div class="row">
-      <div class="col s12 m10 l8 offset-l2 offset-m1">
-          <p id="description">
+    <div class="row description">
+      <div class="col s12 m8 l6 offset-l3 offset-m2">
+          <p class="flow-text" id="description">
             OpenSource Watch is up to date with everything that is going on in the 100,000 most popular open source libraries on Github. Easily check the top activity among libraries, issues, and developers up to the last 90 days. We are growing fast so keep watching!
           </p>
-      </div>
+        </div>
     </div>
-  </div>
 
-  <!-- <div class="row pushpin-select-row" >
-    <div class="input-field col s12 m8 l6 offset-l3 offset-m2"
-    id="date-range-select">
-      <select>
-        <option value="daily">  Daily</option>
-        <option value="weekly"> Weekly</option>
-        <option value="monthly">Monthly</option>
-        <option value="last_90">Last 90 Days</option>
-      </select>
-      <label> Select Range </label>
-    </div>
-  </div> -->
   <div class="row pushpin-date-range-row">
     <div class="col s12 m8 l8 offset-m2 offset-l2">
       <ul class="tabs tabs-fixed-width">
@@ -42,7 +28,7 @@
 <main>
     <div class="row">
       <div class="col s12 m5 l5 hoverable">
-        <table class="bordered highlight centered">
+        <table class="bordered highlight centered" id="repositories">
           <h4 class="center-align">Top Repositories</h3>
           <thead>
             <tr>
@@ -52,19 +38,13 @@
             </tr>
           </thead>
           <tbody>
-            <% @repos.each_with_index do |r, i| %>
-            <tr>
-              <td><%= i + 1 %></td>
-              <td><%= r.name %></td>
-              <td><%= r.hit_count %></td>
-            </tr>
-            <% end %>
+            <%= render 'repositories/index' %>
           </tbody>
         </table>
       </div>
 
       <div class="col s12 m5 l5 hoverable">
-        <table class="bordered highlight centered">
+        <table class="bordered highlight centered" id="committers">
           <h4 class="center-align">Top Committers</h3>
           <thead>
             <tr>
@@ -74,13 +54,7 @@
             </tr>
           </thead>
           <tbody>
-            <% @committers.each_with_index do |c, i| %>
-            <tr>
-              <td><%= i + 1 %></td>
-              <td><%= c.github_username %></td>
-              <td><%= c.hit_count %></td>
-            </tr>
-            <% end %>
+            <%= render 'committers/index' %>
           </tbody>
         </table>
       </div>
@@ -88,7 +62,7 @@
 
     <div class="row">
       <div class="col s12 m5 l5 hoverable">
-        <table class="bordered highlight centered">
+        <table class="bordered highlight centered" id="issues">
           <h4 class="center-align">Active Issues</h3>
           <thead>
             <tr>
@@ -99,20 +73,13 @@
             </tr>
           </thead>
           <tbody>
-            <% @issues.each_with_index do |issue, i| %>
-            <tr>
-              <td><%= i + 1 %></td>
-              <td><%= issue.name %></td>
-              <td><%= issue.hit_count %></td>
-              <td><%= Repository.find(issue.repository_id).name %></td>
-            </tr>
-            <% end %>
+            <%= render 'issues/index' %>
           </tbody>
         </table>
       </div>
 
       <div class="col s12 m5 l5 hoverable">
-        <table class="bordered highlight centered">
+        <table class="bordered highlight centered" id="chatties">
           <h4 class="center-align">Chattiest Users</h3>
           <thead>
             <tr>
@@ -122,13 +89,7 @@
             </tr>
           </thead>
           <tbody>
-            <% @chatty.each_with_index do |user, i| %>
-            <tr>
-              <td><%= i + 1 %></td>
-              <td><%= user.github_username %></td>
-              <td><%= user.hit_count %></td>
-            </tr>
-            <% end %>
+            <%= render 'chatties/index' %>
           </tbody>
         </table>
       </div>
@@ -136,10 +97,10 @@
 </main>
 
 <footer>
-  <div class="container">
-    <div class="row">
-      &copy; 2017 OpenSource Watch
-      <a class="grey-text text-lighten-4 right" href="#!">Email Us</a>
-    </div>
+  <div class="row">
+    <div class="col s12">
+    &copy; 2017 OpenSource Watch
+    <a class="grey-text text-lighten-4 right" href="#!">Email Us</a>
+  </div>
   </div>
 </footer>
