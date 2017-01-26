@@ -2,6 +2,7 @@ class LandingController < ApplicationController
   before_action :set_activity_vars
 
   def index
+    binding.pry
     respond_to do |type|
       type.html
       type.js do
