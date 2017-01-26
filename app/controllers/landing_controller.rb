@@ -1,5 +1,5 @@
 class LandingController < ApplicationController
-  before_filter :set_activity_vars
+  before_action :set_activity_vars
 
   def index
     respond_to do |type|
