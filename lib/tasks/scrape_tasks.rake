@@ -1,7 +1,5 @@
+# NOTE: For local testing with small amounts of repos
 namespace :github do
-  require_relative "../scraper/github_repo_scraper"
-  require_relative "../scraper/github_user_scraper"
-
   # Get github repo information for each repo
   task :repos => :environment do |t|
     babysitter(t) do
@@ -14,7 +12,6 @@ namespace :github do
   end
 
   # Get commit info from each repo
-  # TODO: make args take in the 3 options for lib_commits
   task :commits, [:infinite, :fetch_meta] => :environment do |t, args|
     if args.infinite == "true"
       babysitter(t) do
@@ -40,52 +37,6 @@ namespace :github do
   end
 
   task :all => [:repos, :commits, :issues, :users]
-end
-
-# Get commit info from each repo using the redis queue
-namespace :dispatch do
-  require_relative '../scraper/scraper_dispatcher'
-  require_relative '../scraper/github_repo_scraper'
-
-  task :repo_commits => :environment do |t|
-    babysitter(t) do
-      puts "Dispatching commits and issues scraping pathway..."
-      ScraperDispatcher.scrape_commits
-    end
-  end
-
-  task :repo_issues => :environment do |t|
-    babysitter(t) do
-      puts "Dispatching commits and issues scraping pathway..."
-      ScraperDispatcher.scrape_issues
-    end
-  end
-
-  task :repo_metadata => :environment do |t|
-    babysitter(t) do
-      puts "Dispatching repos and scraping metadata..."
-      ScraperDispatcher.scrape_metadata
-    end
-  end
-
-  task :redis_requeue, [:queue_name, :query] => :environment do |t, args|
-    puts "Enqueuing redis..."
-    ScraperDispatcher.redis_requeue(args.to_h)
-  end
-end
-
-namespace :github_api do
-  task :search_repos, [:skip_to_star] => :environment do |t, args|
-    require_relative '../api/github_search_wrapper.rb'
-
-    GithubSearchWrapper.paginate_repos(args.to_h)
-  end
-
-  task :public_repos, [:start_id, :stop_id] => :environment do |t, args|
-    require_relative '../api/github_repos_wrapper'
-
-    GithubReposWrapper.paginate_repos(args.to_h)
-  end
 end
 
 def babysitter(task = NullTask.new)

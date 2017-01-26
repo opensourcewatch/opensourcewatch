@@ -1,5 +1,3 @@
-require 'uri'
-
 class GithubSearchWrapper
   @BASE_URL = 'https://api.github.com/search/repositories'
   @access_token = ENV["GITHUB_API_KEY"]
@@ -446,6 +444,7 @@ class GithubSearchWrapper
 
   @lang_length = @languages.count
   @curr_lang_count = 0
+  @query_by_language = false
 
   class << self
     def paginate_repos(skip_to_star: nil)
@@ -466,7 +465,7 @@ class GithubSearchWrapper
           puts "Search request to #{@current_url}"
 
           if rate_requests_remain?
-            @query_by_language ? handle_stars_and_languages : handle_stars_request
+            handle_request
           else
             break
           end
@@ -494,8 +493,10 @@ class GithubSearchWrapper
     def handle_request
       if @first_round_of_pagination
         handle_first_round_of_pagination
-      else
+      elsif !@query_by_language
         handle_stars_request
+      else
+        handle_stars_and_languages
       end
     end
 
@@ -614,17 +615,29 @@ class GithubSearchWrapper
     def process_repos
       # TODO: Change this to upsert data
       puts "Processing #{@parsed_repos.count} Repositories."
-      repos = @parsed_repos.map do |repo|
-        Repository.new({
-          name: repo['name'],
-          github_id: repo['id'],
-          url: repo['html_url'],
-          language: repo['language'],
-          stars:  repo['stargazers_count'],
-          forks:  repo['forks']
-        })
+      @parsed_repos.each do |repo|
+        r = Repository.find_by(github_id: repo['id'])
+        if r
+          r.update({
+            name: repo['name'],
+            github_id: repo['id'],
+            url: repo['html_url'],
+            language: repo['language'],
+            stars:  repo['stargazers_count'],
+            forks:  repo['forks']
+          })
+        else
+          Repository.create({
+            name: repo['name'],
+            github_id: repo['id'],
+            url: repo['html_url'],
+            language: repo['language'],
+            stars:  repo['stargazers_count'],
+            forks:  repo['forks']
+          })
+        end
+        puts "Updated #{repo['name']}!"
       end
-      Repository.import(repos)
       puts "#{@repos_processed += @parsed_repos.count} Repositories Processed in #{minutes_running} minutes."
     end
 

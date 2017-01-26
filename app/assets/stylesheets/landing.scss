@@ -1,0 +1,126 @@
+table.bordered tbody tr:last-of-type {
+  border-bottom: 0px none;
+}
+
+h3 {
+  height: 90px;
+}
+
+.col {
+  margin-top: 40px;
+}
+
+h1 {
+  background-color: blue;
+}
+
+main .row .col.l5,
+main .row .col.m5,
+footer .row {
+  margin-top: 10px;
+  margin-left: 4.16666667%;
+  margin-right: 4.16666667%;
+}
+
+@media only screen and (max-width: 720px) {
+  main .row .col.s12 {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+}
+
+table.centered tr td {
+  font-size: 1.1em;
+}
+
+table.centered tr td a {
+  color: inherit;
+}
+
+main .row:last-of-type {
+  margin-bottom: 33px;
+}
+
+.tabs {
+  overflow-x: hidden;
+}
+
+header .pushpin-date-range-row {
+  margin-bottom: 0px;
+}
+
+header .pushpin-date-range-row,
+header .pushpin-date-range-row ul {
+  @extend .teal, .lighten-5;
+}
+
+header .pushpin-date-range-row ul {
+  height: 100%;
+  padding: 8px 0;
+}
+
+header .pushpin-date-range-row .col {
+  margin-top: 0px;
+}
+
+header .pushpin-date-range-row a {
+  @extend .teal-text, .text-accent-4;
+}
+
+header .pushpin-date-range-row .tabs .indicator {
+  background-color: #00bfa5;
+}
+
+header .pushpin-date-range-row.pinned {
+  position: fixed !important;
+  width: 100%;
+  padding-top: 16px;
+}
+
+header .pushpin-date-range-row.pinned,
+header .pushpin-date-range-row.pinned ul {
+  background-color: #00bfa5 !important;
+}
+
+header .pinned a,
+header .pinned.pushpin-date-range-row .tabs .indicator {
+  color: #e0f2f1 !important;
+}
+
+header .pinned.pushpin-date-range-row .tabs .indicator {
+  background-color: #e0f2f1 !important;
+}
+
+#description {
+  font-size: 1.2em;
+}
+
+// Color
+// Dark Primary: #00796B
+// Primary: #009688
+// Light Primary: #B2DFDB
+// Text/Icons: #FFFFFF
+// Accent Color: #536DFE
+// Primary Text: #212121
+// Secondary Text: #757575
+// Divider Color: #BDBDBD
+
+.nav-wrapper {
+  background-color: #00796B;
+}
+
+header .description {
+  color: #fff;
+  @extend .teal;
+  margin-bottom: 0px;
+  padding: 48px 0;
+}
+
+header .description .col {
+  margin-top: 0px;
+}
+
+main a:hover {
+  @extend .teal-text, .text-accent-4;
+}

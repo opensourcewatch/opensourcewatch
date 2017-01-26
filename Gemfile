@@ -5,7 +5,6 @@ gem 'nokogiri'  # Scraping
 gem 'httplog'   # Log requests
 
 # Assets
-gem "bootstrap-sass"
 gem 'sass-rails', '~> 5.0' # Use SCSS for stylesheets
 gem 'uglifier', '>= 1.3.0' # Compressor for JavaScript assets
 gem 'jquery-rails' # JavaScript library
@@ -21,7 +20,7 @@ gem 'redis'
 gem 'figaro'
 gem 'activerecord-import'
 gem 'json'
-gem 'therubyracer'
+gem 'whenever', require: false 
 
 # JS Runtime
 gem 'therubyracer'
@@ -29,6 +28,9 @@ gem 'therubyracer'
 # Better search
 gem 'elasticsearch-model'
 gem 'elasticsearch-rails'
+
+# Material design
+gem 'materialize-sass'
 
 group :development, :test do
   gem 'pry'     # Debugging
