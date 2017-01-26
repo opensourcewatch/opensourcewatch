@@ -1,3 +1,3 @@
 Rails.application.routes.draw do
-  get '/', to: 'landing#index'
+  root 'landing#index'
 end
