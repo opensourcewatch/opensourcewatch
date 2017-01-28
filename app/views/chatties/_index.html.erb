@@ -1,0 +1,8 @@
+<% @chatties.each_with_index do |user, i| %>
+<tr>
+  <td><%= i + 1 %></td>
+  <% username = user.github_username %>
+  <td><%= link_to username, "https://github.com/#{username}" %></td>
+  <td><%= user.hit_count %></td>
+</tr>
+<% end %>

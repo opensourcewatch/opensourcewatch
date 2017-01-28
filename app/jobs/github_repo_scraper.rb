@@ -73,8 +73,16 @@ class GithubRepoScraper
           raw_issues.each do |raw_issue|
             built_issue = build_issue(raw_issue)
             next if built_issue.nil?
-            issue = Issue.create( build_issue(raw_issue) )
-            puts "Creating Issue" if issue.id
+
+            issue = Issue.find_or_create_by(
+              repository_id: built_issue['repository_id'],
+              issue_number: built_issue['issue_number']
+            ) do |i|
+              i.name = built_issue['name']
+              i.creator = built_issue['creator']
+              i.url = built_issue['url']
+              i.open_date = built_issue['open_date']
+            end
 
             issues << issue
           end
@@ -96,24 +104,30 @@ class GithubRepoScraper
 
           raw_comments = @github_doc.doc.css("div.timeline-comment-wrapper")
 
+          freshest_comment = issue.issue_comments.order("github_created_at DESC").first
           raw_comments.each do |raw_comment|
+            unless freshest_comment.nil?
+              next if comment_outside_time_range?(raw_comment, freshest_comment)
+            end
+
             comment_json = build_comment(raw_comment)
             comment_json['issue_id'] = issue.id
             @comments_cache << IssueComment.new(comment_json)
-
           end
+
           if @comments_cache.count > 30
-            require 'benchmark'
-            b = Benchmark.measure do
-              IssueComment.import(@comments_cache)
-            end
-            puts "Time to create #{@comments_cache.count} Issue Comments with bulk import after pushing validation into DB\n\n"
-            puts "\t #{b.real}"
+            IssueComment.import(@comments_cache)
             @comments_cache.clear
           end
 
         end
       end
+    end
+
+    def comment_outside_time_range?(raw_comment, issue_comment)
+      time = Time.parse(raw_comment.css("a relative-time").attribute("datetime").value)
+      time_limit = issue_comment.github_created_at
+      time <= time_limit
     end
 
     # Retrieves the commits for each Repository
@@ -167,7 +181,7 @@ class GithubRepoScraper
     def build_issue(raw_issue)
       last_update_str = raw_issue.css('span.issue-meta-section.ml-2 relative-time')[0]['datetime']
       last_update = Time.parse(last_update_str)
-      return nil if last_update < Date.today - 90
+      return nil unless last_update >= today
 
       issue = {}
       issue['repository_id'] = @current_repo.id
@@ -176,14 +190,14 @@ class GithubRepoScraper
       issue['creator'] = raw_issue.css("a.h4")
       issue['url'] = raw_issue.css("a.h4").attribute("href").value
 
-      issue_number, open_date, creator = raw_issue.css("span.opened-by").text.strip.split("\n")
-      # NOTE: When we want to make open_date a string
-      # date_str = raw_issue.css('span.opened-by relative-time').first['datetime']
-      # open_date = Time.parse(date_str)
+      opened_by = raw_issue.css('span.opened-by')
+      issue_number = opened_by.text.strip.split("\n").first
+      creator = opened_by.text.strip.split("\n").last
+      date_str = opened_by.css('relative-time').first['datetime']
 
       issue['issue_number'] = issue_number[1..-1].to_i
       issue['creator'] = creator.strip
-      issue['open_date'] = open_date.split(" ")[1..-2].join(" ")
+      issue['open_date'] = Time.parse(date_str)
 
       issue
     end
@@ -243,7 +257,7 @@ class GithubRepoScraper
         relative_time = commit_info.css('relative-time')
         next if relative_time.empty?
         commit_date = Time.parse(relative_time[0][:datetime])
-        throw :recent_commits_finished unless commit_date.to_date >= last_90_days # for today: commit_date.today?
+        throw :recent_commits_finished unless commit_date.to_date >= today # for today: commit_date.today?
 
         # Not all avatars are users
         user_anchor = commit_info.css('.commit-avatar-cell a')[0]
@@ -281,12 +295,21 @@ class GithubRepoScraper
       end
     end
 
-    def last_years_time
-      DateTime.now - 365
+    # NOTE: This is rails specific!
+    def last_90_days
+      3.month.ago
     end
 
-    def last_90_days
-      DateTime.now - 90
+    def last_month
+      1.month.ago
+    end
+
+    def last_week
+      1.week.ago
+    end
+
+    def today
+      1.day.ago
     end
 
     def repo_readme_content

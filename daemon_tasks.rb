@@ -128,6 +128,8 @@ class DaemonTasks
       'rake dispatch:scrape_metadata'
     when 'issues_and_commits'
       'rake dispatch:scrape_issues_and_commits'
+    when 'scrape_once'
+      'rake dispatch:scrape_once'
     end
   end
 

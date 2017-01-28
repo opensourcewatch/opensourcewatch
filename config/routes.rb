@@ -1,3 +1,4 @@
 Rails.application.routes.draw do
-  get '/', to: 'landing#index'
+  root 'landing#index'
+  get '*path' => redirect('/')
 end

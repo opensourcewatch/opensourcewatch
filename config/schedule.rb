@@ -18,6 +18,7 @@
 # end
 
 # Learn more: http://github.com/javan/whenever
+set :output, '~/workspace/capstone/log/cron.log'
 
 every 5.minutes do
   rake "refresh_matviews"
