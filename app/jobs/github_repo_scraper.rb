@@ -110,16 +110,15 @@ class GithubRepoScraper
               next if comment_outside_time_range?(raw_comment, freshest_comment)
             end
 
-            comment_json = build_comment(raw_comment)
-            comment_json['issue_id'] = issue.id
-            @comments_cache << IssueComment.new(comment_json)
+            comment_hash = build_comment(raw_comment)
+            comment_hash['issue_id'] = issue.id
+            @comments_cache << IssueComment.new(comment_hash)
           end
 
           if @comments_cache.count > 30
             IssueComment.import(@comments_cache)
             @comments_cache.clear
           end
-
         end
       end
     end
