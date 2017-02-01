@@ -1,5 +1,7 @@
 $(document).on("turbolinks:load", function() {
   $(".button-collapse").sideNav();
+  $("#sidenav-overlay").remove();
+  $("body").css("overflow", "visible");
   $(document).on("click", ".pushpin-date-range-row a", function(e) {
     var date_range = e.target.text.toLowerCase();
 
@@ -24,4 +26,5 @@ $(document).on("turbolinks:load", function() {
 $(window).on('popstate', function(e) {
   var date_range = event.state.date_range;
   $('.' + date_range).trigger('click');
+  // Handle annoying overlay
 });
