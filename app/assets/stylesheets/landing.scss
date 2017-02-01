@@ -118,10 +118,6 @@ main .row:last-of-type {
   margin-top: 0px;
 }
 
-main a:hover {
-  @extend .teal-text, .text-accent-4;
-}
-
 // About
 
 .about .col {
