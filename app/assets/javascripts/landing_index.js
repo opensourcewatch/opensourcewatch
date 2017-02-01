@@ -1,4 +1,4 @@
-$(document).ready(function() {
+$(document).on("turbolinks:load", function() {
   $(".button-collapse").sideNav();
   $(document).on("click", ".pushpin-date-range-row a", function(e) {
     var date_range = e.target.text.toLowerCase();
