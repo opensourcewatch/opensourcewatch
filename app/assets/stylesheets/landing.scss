@@ -141,7 +141,7 @@ main a:hover {
 h1#about-header {
   @extend .teal-text;
   margin: 0;
-  padding: 30px 0;
+  padding: 60px 0 0 0;
 }
 
 .about i::before {
@@ -149,7 +149,7 @@ h1#about-header {
 }
 
 #made-with-description {
-  padding: 20px 0 60px 0;
+  padding: 60px 0 0 0;
 }
 
 main.about {
