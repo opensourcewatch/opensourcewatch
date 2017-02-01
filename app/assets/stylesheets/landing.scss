@@ -134,9 +134,18 @@ main a:hover {
 }
 
 .about .bio a {
-  @extend .teal-text, .text-accent-4;
+  @extend .teal-text;
   display: inline-block;
   width: 100%;
+}
+
+.about .bio a h2 {
+  font-size: 1.4rem;
+  margin-top: 12px;
+}
+
+.about .bio a:hover {
+  @extend .teal-text, .text-accent-1;
 }
 
 h1#about-header {
