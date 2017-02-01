@@ -98,6 +98,7 @@ main .row:last-of-type {
   vertical-align: middle;
 }
 
+// Move logo + name right on small screens
 @media only screen and (max-width: 550px) {
   a.brand-logo.center {
     width: 100%;
@@ -154,7 +155,7 @@ main .row:last-of-type {
 }
 
 .about .bio a:hover {
-  @extend .teal-text, .text-accent-1;
+  @extend .teal-text, .text-accent-4;
 }
 
 h1#about-header {
