@@ -20,7 +20,8 @@ gem 'redis'
 gem 'figaro'
 gem 'activerecord-import'
 gem 'json'
-gem 'whenever', require: false 
+gem 'whenever', require: false
+gem 'font-awesome-rails'
 
 # JS Runtime
 gem 'therubyracer'
