@@ -1,10 +1,12 @@
-$(document).on("turbolinks:load", function() {
+$(document).ready(function() {
   // Get rid of overlay if it exists
   $(".button-collapse").sideNav();
   $("#sidenav-overlay").remove();
-  
+
   $("body").css("overflow", "visible");
-  $(document).on("click", ".pushpin-date-range-row a", function(e) {
+  $(".pushpin-date-range-row").on("click", "a", function(e) {
+    e.stopPropagation();
+    $(e.target).css("class", "active");
     var date_range = e.target.text.toLowerCase();
 
     var push_the_state = true;
