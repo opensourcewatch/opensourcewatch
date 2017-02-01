@@ -2,28 +2,23 @@
 <main class="about">
   <h1 class="about center-align" id="about-header">Who We Are</h1>
 
-  <div class="row about" id="bios">
-    <a class="center-align" href="http://numbluk.com">
-      <div class="col s6 m4 l3 offset-m2 offset-l3 bio" id="first-card">
-        <div class="col s12">
-          <% lukas_email = 'Lukas.Nimmo@gmail.com'.downcase %>
-          <% sha = Digest::MD5.hexdigest(lukas_email) %>
-          <img class="circle responsive-img" src="https://www.gravatar.com/avatar/<%= sha %>?s=800">
-        </div>
-        <h2>Lukas Nimmo</h2>
-      </a>
-    </div>
+  <% lukas = { name: 'Lukas Nimmo', url: 'http://numbluk.com', email: 'Lukas.Nimmo@gmail.com'} %>
+  <% michael = { name: 'Michael Mentele', url: 'http://getmichaelonboard.com', email: 'michaelrmentele@gmail.com' } %>
+  <% names = [ lukas, michael ] %>
 
-    <div class="col s6 m4 l3 bio" id="second-card">
-      <a class="center-align" href="http://getmichaelonboard.com">
+  <div class="row about" id="bios">
+    <% names.shuffle.each_with_index do |name, i| %>
+    <a class="center-align" href="<%= name[:url] %>">
+      <div class="col s6 m4 l3 bio <%= 'offset-m2 offset-l3' if i == 0 %>">
         <div class="col s12">
-          <% michael_email = 'michaelrmentele@gmail.com'.downcase %>
-          <% sha = Digest::MD5.hexdigest(michael_email) %>
+          <% email = name[:email].downcase %>
+          <% sha = Digest::MD5.hexdigest(email) %>
           <img class="circle responsive-img" src="https://www.gravatar.com/avatar/<%= sha %>?s=800">
         </div>
-        <h2>Michael Mentele</h2>
+        <h2><%= name[:name] %></h2>
       </a>
     </div>
+    <% end %>
 
     <!-- <div class="col s12 center-align">
       <p id="made-with-description">Made with <%= fa_icon 'heart' %> at <a href="https://launchschool.com">LaunchSchool</a></p>
