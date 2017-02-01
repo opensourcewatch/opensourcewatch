@@ -10,10 +10,6 @@ h3 {
   margin-top: 40px;
 }
 
-h1 {
-  background-color: blue;
-}
-
 main .row .col.l5,
 main .row .col.m5,
 footer .row {
@@ -123,4 +119,65 @@ main .row:last-of-type {
 
 main a:hover {
   @extend .teal-text, .text-accent-4;
+}
+
+// About
+
+.about .col {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+.about {
+  @extend .teal, .lighten-5;
+}
+
+.about .bio a {
+  @extend .teal-text, .text-accent-4;
+  display: inline-block;
+  width: 100%;
+}
+
+h1#about-header {
+  @extend .teal-text;
+  margin: 0;
+  padding: 30px 0;
+}
+
+.about i::before {
+  color: rgba(208, 0, 0, 0.98);
+}
+
+#made-with-description {
+  padding: 20px 0 60px 0;
+}
+
+main.about {
+  @extend .teal, .lighten-5;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  position: relative;
+}
+
+main.about footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 20px;
+}
+
+main.about footer .col {
+  margin: 0;
+}
+
+main.about footer .row {
+  margin: 0;
+}
+
+// Footer
+html,
+body {
+  height: 100%;
 }
