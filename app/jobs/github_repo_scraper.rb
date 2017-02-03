@@ -116,7 +116,7 @@ class GithubRepoScraper
           end
 
           if @comments_cache.count > 30
-            IssueComment.import(@comments_cache)
+            IssueComment.import(@comments_cache, on_duplicate_key_ignore: true)
             @comments_cache.clear
           end
         end
