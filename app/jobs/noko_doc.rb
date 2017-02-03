@@ -11,7 +11,7 @@ class NokoDoc
     msg = e.message.chomp
     if msg == '429 Too Many Requests'
       sleep 60
-    elsif  msg == '503 Service Unavailable'
+    elsif  msg == '503 Service Unavailable' || msg == '502 Bad Gateway'
       sleep 60
       tries -= 1
       retry if tries > 0
