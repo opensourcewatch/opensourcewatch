@@ -33,6 +33,8 @@ gem 'elasticsearch-rails'
 # Material design
 gem 'materialize-sass'
 
+gem 'rails_12factor', group: :production
+
 group :development, :test do
   gem 'pry'     # Debugging
   gem 'pry-nav' # Navigate while in pry console
