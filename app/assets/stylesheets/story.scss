@@ -6,6 +6,10 @@
   padding: 2em 0;
 }
 
+.story ul:not(.browser-default) li {
+    list-style-type: circle;
+}
+
 ul {
   list-style-type: circle;
 }
