@@ -1,0 +1,15 @@
+.story img {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 80%;
+  padding: 2em 0;
+}
+
+ul {
+  list-style-type: circle;
+}
+ul li {
+  list-style-type: circle;
+  margin-left: 1em;
+}

@@ -128,17 +128,11 @@
 
   <p>Luckily, scraping the top Repositories was a one-time job. We stored the data in a PostgreSQL database and charged ahead with a single process to begin scraping!</p>
 
-  <p><img src="/assets/article/04_iteration_0.png" alt="" /></p>
+  <img src="/assets/article/04_iteration_0.png" alt="" />
 
   <p>One process can achieve 8,500 requests on our Digital Ocean server. We did some extrapolation and estimated it would take 36 hours to scrape all 100,000 repositories one time through (with an average of 2.8 requests needed per repository)!</p>
 
-  <blockquote>
-  <p>Capacity: 200,000 Requests Per Day <br />
-  Time Through Repositories: 36 Hours <br />
-  Capacity Needed: 1 Million Requests Per Day <br />
-  Processes: 1 <br />
-  Servers: 1 <br /></p>
-  </blockquote>
+  <img src="/assets/article/acq_status_01" alt="">
 
   <p>This is 4.5x slower than our target. So, what to do? Scale up! More scrapers means more capacity and with 6 processes we can get within the 8 hour window.</p>
 
@@ -206,24 +200,13 @@
 
   <p>We spin up a second process on our server…</p>
 
-  <blockquote>
-  <p>Capacity: 400,000 Requests Per Day<br />
-  Time Through Repositories: 18 Hours<br />
-  Capacity Needed: 1 Million Requests Per Day<br />
-  Processes: 2<br />
-  Servers: 1</p>
-  </blockquote>
+  <img src="/assets/article/acq_status_02.png" alt="">
 
   <h3 id="scaling-out">Scaling Out</h3>
 
   <p>We are doing a decent job of maximizing our machines so we spun up two more servers with two processes each.</p>
 
-  <blockquote>
-  <p>Capacity: 1,200,000 Requests Per Day<br />
-  Time Through Repositories: <strong>6 Hours</strong><br />
-  Processes: 6 <br />
-  Servers: 3</p>
-  </blockquote>
+  <img src="/assets/article/acq_status_03.png" alt="">
 
   <p>Now, four times a day (every 6 hours) we scrape the top 100,000 repositories on Github using 3 servers (represented by the dispatcher objects) which are coordinated by a Redis queue. This is well within our 8 hour window!</p>
 
@@ -244,13 +227,13 @@
 
   <h2 id="cant-work-too-busy-robust-processes-and-centralized-control">Can’t Work, Too Busy: Robust Processes and Centralized Control</h2>
 
-  <h3 id="more-servers-more-headaches">More Servers, More Headaches</h3>
-
   <p>Now that we have six processes, all of them must be micromanaged. Why? The remote SSH connection (to each process) must remain open on our local machine to run the scraper process. Overall, this means six open connections for monitoring, controlling, and restarting. Do I need to tell you this is <em>extremely</em> time consuming?</p>
 
   <p>A normal day might look like the following: wake up, check on the processes from the night before, and—</p>
 
   <p><em>Gasp!</em> The scrapers all crashed in the middle of the night!</p>
+
+  <h3 id="more-servers-more-headaches">More Servers, More Headaches</h3>
 
   <p><img src="/assets/article/16_dilbert.jpg" alt="" /></p>
 
@@ -328,13 +311,7 @@
 
   <p>Only scraping daily data brought in around 25,000 new records a day, but we were now getting hundreds of thousands to millions of records a day. Our request capacity quickly plummeted to 30% of what we expected.</p>
 
-  <blockquote>
-  <p>Capacity: ~300,000 Requests Per Day <br />
-  Time Through Repositories: 24 Hours
-  Capacity Needed: 1 Million Requests Per Day <br />
-  Processes: 6 <br />
-  Servers: 3 <br /></p>
-  </blockquote>
+  <img src="/assets/article/downshit_01.padding" alt="">
 
   <p>We’ve been downshifted…</p>
 
@@ -429,11 +406,7 @@
   <p>After, it does a heap scan which significantly impacted the lookup time; a 2700X difference. From then on we knew to keep a close eye on other similar situations.</p>
 
   <h3 id="gaining-speed">Gaining Speed…</h3>
-  <blockquote>
-  <p>Capacity: ~700,000 Requests Per Day <br />
-  Time Through Repositories: 12 Hours <br />
-  Capacity Needed: 1 Million Requests Per Day <br /></p>
-  </blockquote>
+  <img src="/assets/article/downshit_03.padding" alt="">
 
   <p><img src="/assets/article/27_gaining_speed.png" alt="" /></p>
 
@@ -509,11 +482,7 @@
 
   <h3 id="vrrrr">Vrrrr…</h3>
 
-  <blockquote>
-  <p>Capacity: ~900,000 Requests Per Day <br />
-  Time Through Repositories: 8 Hours <br />
-  Capacity Needed: 1 Million Requests Per Day <br /></p>
-  </blockquote>
+  <img src="/assets/article/downshit_04.padding" alt="">
 
   <p><img src="/assets/article/30_vrrr.png" alt="" /></p>
 
@@ -553,11 +522,7 @@
 
   <h3 id="vrr-oom">Vrr-OOM!</h3>
 
-  <blockquote>
-  <p>Capacity: ~1,000,000 Requests Per Day <br />
-  Time Through Repositories: ~7 Hours <br />
-  Capacity Needed: 1 Million Requests Per Day <br /></p>
-  </blockquote>
+  <img src="/assets/article/downshit_05.padding" alt="">
 
   <p><img src="/assets/article/34_vrroooom.png" alt="" /></p>
 
@@ -569,9 +534,9 @@
 
   <p><img src="/assets/article/35_explore_data.png" alt="" /></p>
 
-  <p>Initially, it took about a minute to load. That is about as fast as this stone turtle:</p>
+  <p>Initially, it took about a minute to load.</p>
 
-  <p><img src="/assets/article/36_stone_turtle.jpg" alt="" /></p>
+  <img src="/assets/article/render_status_01.png" alt="">
 
   <p>No one wants to see OSW that bad!</p>
 
@@ -688,11 +653,13 @@
 
   <p>The impact of using materialized views is huge…</p>
 
-  <h4 id="queries-are-250-times-faster">Queries are 2,50 times faster!</h4>
+  <h4 id="queries-are-250-times-faster">Queries are 250 times faster!</h4>
 
   <p>That is almost as fast as the round trip to our server and back! Awesome!</p>
 
   <h3 id="until-we-added-that-n1-query">Until We Added that N+1 Query…</h3>
+
+  <img src="/assets/article/render_status_02.png" alt="">
 
   <p>One of the questions we try to answer involves displaying a repository for each active issue we were displaying:</p>
 
@@ -730,7 +697,9 @@
 
   <p>After all of this, it helped us achieve the following:</p>
 
-  <p><strong>50+ s query times ** to **200 ms</strong></p>
+  <img src="/assets/article/render_sts_03.png" alt="">
+
+  <p><strong>50+ s query times to 200 ms</strong></p>
 
   <p>and with four queries per page…</p>
 
