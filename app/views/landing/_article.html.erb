@@ -16,17 +16,17 @@
 
   <% require 'digest' %>
 
-  <% lukas = { name: 'Lukas Nimmo', url: 'http://numbluk.com/credentials', email: 'Lukas.Nimmo@gmail.com'} %>
+  <% lukas = { name: 'Lukas Nimmo', url: 'http://numbluk.com/credentials', email: 'lukas.nimmo@gmail.com'} %>
   <% michael = { name: 'Michael Mentele', url: 'http://getmichaelonboard.com', email: 'michaelrmentele@gmail.com' } %>
   <% info = [ lukas, michael ].shuffle %>
 
   <div>
-    <a href="<%= person[0][:url] %>">
-      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigestperson[0][:email] %>" />
+    <a href="<%= info[0][:url] %>">
+      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigest(info[0][:email]) %>" />
     </a>
 
-    <a href="<%= person[1][:url] %>">
-      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigestperson[1][:email] %>" />
+    <a href="<%= info[1][:url] %>">
+      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigest(info[1][:email]) %>" />
     </a>
   </div>
 
@@ -35,7 +35,10 @@
   <h2 id="table-of-contents">Table of Contents</h2>
   <ol>
     <li><strong>How it All Began</strong></li>
-    <li><strong>Getting Started: Developing the Data Acquisition Process</strong>
+    <li>
+      <a href="#getting-started">
+        <strong>Getting Started: Developing the Data Acquisition Process</strong>
+      </a>
       <ul>
         <li>Tracking the Top 100,000 repositories</li>
         <li>Iteration 0: 200,000 Requests Per Day</li>
@@ -46,7 +49,10 @@
         <li>Scaling Out: 1.2 Million Requests Per Day</li>
       </ul>
     </li>
-    <li><strong>Ensuring Uptime of Data Acquisition</strong>
+    <li>
+      <a href="#ensuring-uptime">
+        <strong>Ensuring Uptime of Data Acquisition</strong>
+      </a>
       <ul>
         <li>More Servers, More Headaches</li>
         <li>Server Micromanagement: Working with Brittle Data</li>
@@ -54,7 +60,10 @@
         <li>The Power of Daemons: Centralized Control</li>
       </ul>
     </li>
-    <li><strong>Growing Pains: Improving the Rate of Data Acquisition</strong>
+    <li>
+      <a href="#growing-pains">
+        <strong>Growing Pains: Improving the Rate of Data Acquisition</strong>
+      </a>
       <ul>
         <li>More Questions, More Data: Retrieving Historical Data</li>
         <li>More data, More Problems: Handling Millions of Writes Per Day</li>
@@ -70,7 +79,10 @@
         <li>Vrr-OOM! 1,000,000 Requests</li>
       </ul>
     </li>
-    <li><strong>Rendering the Data</strong>
+    <li>
+      <a href="rendering-the-data">
+        <strong>Rendering the Data</strong>
+      </a>
       <ul>
         <li>Putting our Thinking Caps Back On…</li>
         <li>Can we Cache the Query?</li>
@@ -80,7 +92,10 @@
         <li>Impact of Database Level Caching</li>
       </ul>
     </li>
-    <li><strong>Making Requests Count:</strong> <em>SRRPQQ for Tuning the Distribution of Repeat Jobs</em>
+    <li>
+      <a href="making-requests-count">
+        <strong>Making Requests Count:</strong>
+      </a>
       <ul>
         <li>Not All Repositories are Created Equal</li>
         <li>Priority Queue?</li>
@@ -92,11 +107,17 @@
         <li>The Code: Tuning and Dequeueing</li>
       </ul>
     </li>
-    <li><strong>Future Work and Lessons Learned</strong></li>
+    <li>
+      <a href="future-work">
+        <strong>Future Work and Lessons Learned</strong>
+      </a>
+    </li>
   </ol>
 
   <h2 id="how-it-all-began">How it all Began</h2>
-  <p>Open Source Watch started as a collaborative idea between <a href="http://getmichaelonboard.com">Michael Mentele</a> and <a href="http://numbluk.com">Lukas Nimmo</a>. We wanted to gauge the activity of open-source projects on Github and find out who the heroes of open-source are.</p>
+  <p>Open Source Watch started as a collaborative idea between <a href="<%= info[0][:email] %>"><%= info[0][:name] %></a>
+  and
+  <a href="<%= info[1][:email] %>"><%= info[1][:name] %></a>. We wanted to gauge the activity of open-source projects on Github and find out who the heroes of open-source are.</p>
 
   <p>The questions we asked were:</p>
 
@@ -118,7 +139,7 @@
 
   <p>The focus of OSW is answering questions and to answer questions, we need to focus on data. The rest of the conversation will center on acquiring data, setting up infrastructure, and tuning our system.</p>
 
-  <h2 id="infrastructure-capacity-and-cost-per-request">Infrastructure: Capacity and Cost per Request</h2>
+  <h2 id="getting-started">Getting Started: Developing the Data Acquisition Process</h2>
 
   <p>We believe that developers should be able to see updated information from when they begin their work day to when they finish. For that reason we initially selected an <strong>8 hour window</strong> as our target.</p>
 
@@ -231,7 +252,7 @@
 
   <hr />
 
-  <h2 id="cant-work-too-busy-robust-processes-and-centralized-control">Can’t Work, Too Busy: Robust Processes and Centralized Control</h2>
+  <h2 id="ensuring-uptime">Ensuring Uptime of Data Acquisition</h2>
 
   <p>Now that we have six processes, all of them must be micromanaged. Why? The remote SSH connection (to each process) must remain open on our local machine to run the scraper process. Overall, this means six open connections for monitoring, controlling, and restarting. Do I need to tell you this is <em>extremely</em> time consuming?</p>
 
@@ -301,7 +322,7 @@
 
   <p>From our one console, with a few keyboard strokes, we can check on all of our scrapers. Centralized control makes deployment simple, monitoring a joy (if that’s a thing), and restarting painless. No longer do the processes have to be micromanaged.</p>
 
-  <h2 id="growing-pains-system-bottlenecks-and-system-tuning">Growing Pains: System Bottlenecks and System Tuning</h2>
+  <h2 id="growing-pains">Growing Pains: System Bottlenecks and System Tuning</h2>
 
   <p>We’ve been acquiring data during the 7 days that we’ve been working on the project and the database has reached a few hundred-thousand records.</p>
 
@@ -363,7 +384,7 @@
 
   <p>With the current rate &lt; 1% of capacity, insertions are not the problem. We will have to keep sleuthing…</p>
 
-  <h2 id="is-it-slow-reads">Is it Slow Reads?</h2>
+  <h3 id="is-it-slow-reads">Is it Slow Reads?</h3>
 
   <p>If the problem isn’t insertions, what about reads? Here is an example of attempting to find an issue if it exists, else make a new one:</p>
 
@@ -534,7 +555,7 @@
 
   <p>At this point, we are now back to the capacity that we had originally anticipated. You’ll notice that 5th gear was never reached! That is not a mistake. Our acquisition could still be further tuned, but we’ll get to that later.</p>
 
-  <h2 id="exploring-the-data">Exploring the Data</h2>
+  <h2 id="rendering-the-data">Rendering the Data</h2>
 
   <p>After all of that hard work, how about we take a look at some of the data we’ve collected? by going back back to the webpage:</p>
 
@@ -914,7 +935,7 @@
 
   <p>The Staggered Round-Robin Queue-of-Queues is simple, as fast as possible (zero sorting), and gives precise control over the scraping distribution.</p>
 
-  <h2 id="the-future-and-beyond">The Future and Beyond</h2>
+  <h2 id="future-work">Future Work and Lessons Learned</h2>
 
   <p>What does the future hold for OSW? Let’s take a look…</p>
 
@@ -942,7 +963,7 @@
   <li>Tracking the top 1 million repositories</li>
   </ul>
 
-  <h2 id="in-the-end">In the End</h2>
+  <h3 id="in-the-end">In the End</h3>
 
   <p>We learned quite a few things over the course of this project, but there are a few we especially wanted to highlight:</p>
 
@@ -963,7 +984,7 @@
     <p>Brain synchronization. One of the greatest challenges of working with another person is getting <em>and staying</em> in sync. Once you have both established a common vision and are working on the same code base it is much easier to move forward. However, diverging ideas occur all the time where you talk about the same thing, but you both have very different mental images of what it looks like. Mockups, diagrams, and representational documentation of some kind are priceless when it comes to eliminating confusion over abstract concepts that are poorly represented verbally.</p>
   </li>
   <li>
-    <p>Psychological safety is paramount. It’s good for ideas to bump together; it gets rid of the chaff. Discussing decisions creates a kind of idea evolution where the idea grows, shrinks, and becomes something altogether you never would have guessed; it’s better. Being detached from ideas helps with this process and always making sure that the idea is critiqued-not the person! This is something I believe Michael and I handled superbly and I couldn’t be more thankful for it.</p>
+    <p>Psychological safety is paramount. It’s good for ideas to bump together; it gets rid of the chaff. Discussing decisions creates a kind of idea evolution where the idea grows, shrinks, and becomes something altogether you never would have guessed; it’s better. Being detached from ideas helps with this process and always making sure that the idea is critiqued-not the person! This is something we believe we handled superbly and we couldn’t be more thankful for it.</p>
   </li>
   </ol>
 
@@ -974,12 +995,12 @@
   <hr />
 
   <div>
-    <a href="<%= person[1][:url] %>">
-      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigestperson[0][:email] %>" />
+    <a href="<%= info[1][:url] %>">
+      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigest(info[0][:email]) %>" />
     </a>
 
-    <a href="<%= person[0][:url] %>">
-      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigestperson[1][:email] %>" />
+    <a href="<%= info[0][:url] %>">
+      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigest(info[1][:email]) %>" />
     </a>
   </div>
 
