@@ -988,11 +988,11 @@
 
   <div>
     <a href="<%= info[1][:url] %>">
-      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigest(info[0][:email]) %>" />
+      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigest(info[1][:email]) %>" />
     </a>
 
     <a href="<%= info[0][:url] %>">
-      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigest(info[1][:email]) %>" />
+      <img class="gravitar" src="https://secure.gravatar.com/avatar/<%= Digest::MD5.hexdigest(info[0][:email]) %>" />
     </a>
   </div>
 
