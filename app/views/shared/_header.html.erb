@@ -7,10 +7,12 @@
       <% end %>
       <a href="#" data-activates="mobile-demo" class="button-collapse hide-on-med-and-up"><%= fa_icon 'bars' %></a>
       <ul class="right hide-on-small-and-down">
+        <li><%= link_to 'Story', story_path %></li>
         <li><%= link_to 'About', about_path %></li>
       </ul>
       <ul class="side-nav" id="mobile-demo">
         <li><%= link_to 'Home', root_path %></li>
+        <li><%= link_to 'Story', story_path %></li>
         <li><%= link_to 'About', about_path %></li>
       </ul>
     </div>

@@ -12,6 +12,8 @@ class LandingController < ApplicationController
 
   def about; end
 
+  def story; end
+
   private
 
   def set_activity_vars

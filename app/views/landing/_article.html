@@ -1,0 +1,1000 @@
+<div class="post-header">
+  <h1>How We Became the Most Up-To-Date Monitor of Open-Source Github Projects on the Web</h1>
+</div>
+
+<div class="post-content" itemprop="articleBody">
+
+  <p>This is the story of how two developers set out to discover the top contributors to open-source. We do this by tracking the top 100,000 most starred repositories on Github. Some stats about the project:</p>
+  <ul>
+    <li>1,200,000+ Requests Per Day (RPD)</li>
+    <li>20,000,000+ Records (and counting)</li>
+  </ul>
+
+  <p>We are going to walk you through the major struggles we faced and lessons learned along the way.</p>
+
+  <p>Wait, who are <em>we</em> you ask?</p>
+
+  <div>
+    <a href="http://getmichaelonboard.com/">
+      <img class="gravitar" src="https://secure.gravatar.com/avatar/6ec313ee09eeb69eddd3789f98a3d2b2" />
+    </a>
+
+    <a href="http://numbluk.com/credentials">
+      <img class="gravitar" src="https://www.gravatar.com/avatar/fd080461b35c3dcb5911e38d5f58c5af" />
+    </a>
+  </div>
+
+  <p>We are two full stack developers… and we are looking for work! Click our beautiful faces to check out us out ;)</p>
+
+  <h2 id="table-of-contents">Table of Contents</h2>
+  <ol>
+    <li><strong>How it All Began</strong></li>
+    <li><strong>Getting Started:</strong> <em>Capacity and Cost per Request</em>
+      <ul>
+        <li>Tracking the Top 100,000 repositories</li>
+        <li>Iteration 0: 200,000 Requests Per Day</li>
+        <li>The Problem of Shared State</li>
+        <li>Coordination Options: DB Psuedo-Queue vs. Redis Queue</li>
+        <li>Collaboration: Dispatcher Object Map</li>
+        <li>Scaling Up: Performance Comparison</li>
+        <li>Scaling Out: 1.2 Million Requests Per Day</li>
+      </ul>
+    </li>
+    <li><strong>Can’t Work, Too Busy:</strong> <em>Robust Processes and Centralized Control</em>
+      <ul>
+        <li>More Servers, More Headaches</li>
+        <li>Server Micromanagement: Working with Brittle Data</li>
+        <li>Binding Daemons to our Will: Failover</li>
+        <li>The Power of Daemons: Centralized Control</li>
+      </ul>
+    </li>
+    <li><strong>Growing Pains:</strong> <em>System Bottlenecks &amp; System Tuning</em>
+      <ul>
+        <li>More Questions, More Data: Retrieving Historical Data</li>
+        <li>More data, More Problems: Handling Millions of Writes Per Day</li>
+        <li>Putting on Our Thinking Caps: Capacity from 1 Million to 300,000 Requests</li>
+        <li>Is Postgres Being Overwhelmed?</li>
+        <li>Is it Slow DB Reads?</li>
+        <li>Gaining Speed: 700,000 Requests</li>
+        <li>Is it Aggregate Latency (many queries over the wire)?</li>
+        <li>Aggregate Latency Begone!</li>
+        <li>Vrr… 900,000 Requests</li>
+        <li>Behind the ORM Curtain</li>
+        <li>Pushing Validations to the Database</li>
+        <li>Vrr-OOM! 1,000,000 Requests</li>
+      </ul>
+    </li>
+    <li><strong>Exploring the Data:</strong> <em>50 second Page Load Time!?</em>
+      <ul>
+        <li>Putting our Thinking Caps Back On…</li>
+        <li>Can we Cache the Query?</li>
+        <li>Lazily Loaded Table Caching - Custom Tables?</li>
+        <li>The Materialized View Impact: 250x Faster!</li>
+        <li>Until We Added that N+1 Query…</li>
+        <li>Impact of Database Level Caching</li>
+      </ul>
+    </li>
+    <li><strong>Making Requests Count:</strong> <em>SRRPQQ for Tuning the Distribution of Repeat Jobs</em>
+      <ul>
+        <li>Not All Repositories are Created Equal</li>
+        <li>Priority Queue?</li>
+        <li>Failed Priority Queue Experiment: Binary Heap</li>
+        <li>Failed Priority Queue Experiments: Sorted Sets</li>
+        <li>What do we Really Want?</li>
+        <li>Staggered Round-Robin Prioritized Queue-of-Queues!?</li>
+        <li>The Code: Enqueueing</li>
+        <li>The Code: Tuning and Dequeueing</li>
+      </ul>
+    </li>
+    <li><strong>Future Work and Lessons Learned</strong></li>
+  </ol>
+
+  <h2 id="how-it-all-began">How it all Began</h2>
+  <p>Open Source Watch started as a collaborative idea between <a href="http://getmichaelonboard.com">Michael Mentele</a> and <a href="http://numbluk.com">Lukas Nimmo</a>. We wanted to gauge the activity of open-source projects on Github and find out who the heroes of open-source are.</p>
+
+  <p>The questions we asked were:</p>
+
+  <ol>
+    <li>What are the most active repositories?</li>
+    <li>Who are the most active users?</li>
+    <li>What issues are most active?</li>
+    <li>Which users communicate the most?</li>
+  </ol>
+
+  <p>Here is a look at Open Source Watch (OSW):
+  <br /></p>
+
+  <p><img src="/assets/article/02_osw_home_full.png" alt="" /></p>
+
+  <p>The homepage consists of AJAXified sprinkles for the table displays and styles provided by the Materialize framework. Take a long look (or go to our <a href="http://opensourcewatch.io">website</a>) because we won’t be talking about this much.</p>
+
+  <p><img src="/assets/article/03_overview_glacier.png" alt="" /></p>
+
+  <p>The focus of OSW is answering questions and to answer questions, we need to focus on data. The rest of the conversation will center on acquiring data, setting up infrastructure, and tuning our system.</p>
+
+  <h2 id="infrastructure-capacity-and-cost-per-request">Infrastructure: Capacity and Cost per Request</h2>
+
+  <p>We believe that developers should be able to see updated information from when they begin their work day to when they finish. For that reason we initially selected an <strong>8 hour window</strong> as our target.</p>
+
+  <p>First, we need to get the repository URLs of the projects we are going to track. Our simple solution was to retrieve the top 100,000 repositories using Github’s Search API. We did this by searching most starred repositories in descending order and paginating through the JSON returned by Github.</p>
+
+  <hr />
+  <p><b>Tip</b>: Double check your data streams! Third-party API’s are not always robust. Github’s Search API can be flimsy and inaccurate, with holes in the data. We had to be very careful, for example decrementing the star count by one each time to ensure our data was complete. If we had relied on Github’s ‘next page url’ we would have had dirty data!</p>
+  <hr />
+
+  <p><br /></p>
+
+  <h3 id="iteration-0">Iteration 0</h3>
+
+  <p>Luckily, scraping the top Repositories was a one-time job. We stored the data in a PostgreSQL database and charged ahead with a single process to begin scraping!</p>
+
+  <p><img src="/assets/article/04_iteration_0.png" alt="" /></p>
+
+  <p>One process can achieve 8,500 requests on our Digital Ocean server. We did some extrapolation and estimated it would take 36 hours to scrape all 100,000 repositories one time through (with an average of 2.8 requests needed per repository)!</p>
+
+  <blockquote>
+  <p>Capacity: 200,000 Requests Per Day <br />
+  Time Through Repositories: 36 Hours <br />
+  Capacity Needed: 1 Million Requests Per Day <br />
+  Processes: 1 <br />
+  Servers: 1 <br /></p>
+  </blockquote>
+
+  <p>This is 4.5x slower than our target. So, what to do? Scale up! More scrapers means more capacity and with 6 processes we can get within the 8 hour window.</p>
+
+  <p><img src="/assets/article/05_iteration_1.png" alt="" /></p>
+
+  <h3 id="the-problem-of-shared-state">The Problem of Shared State</h3>
+
+  <p>Initially, our scraper kept the list of repos internally as a circular queue. We shift from the front and immediately push that repository to the back like so:</p>
+
+  <p><img src="/assets/article/06_current_state_of_scraper.jpg" alt="" /></p>
+
+  <p>With this data structure we can always ensure that we are getting the oldest repository in O(1) time.</p>
+
+  <p>However, that data is stored in-memory within the process itself. If we scaled as is, they would not be working off the same queue; each would work through its own list independently:</p>
+
+  <p><img src="/assets/article/07_shared_state.png" alt="" /></p>
+
+  <p>What we want is for our scrapers to be working off the same list. Therefore, we extracted and centralize this queue state like so:</p>
+
+  <p><img src="/assets/article/08_non_shared_state.png" alt="" /></p>
+
+  <h3 id="coordination-options">Coordination Options</h3>
+
+  <p>Okay, how do we implement this? Two options occurred to us…</p>
+
+  <p>First, we could use the current database as a pseudo-queue by <em>timestamping</em> the repository every time we scrape it, and then making sure we retrieve the record with the oldest ‘updated_at’ column. However, this means that every time we want the next repository, we have to do a scan to find the oldest timestamp. This is awfully slow:</p>
+
+  <p><img src="/assets/article/10_db_coord_opt_before_idx.jpg" alt="" /></p>
+
+  <p>What if we indexed that column?</p>
+
+  <p><img src="/assets/article/11_db_coord_opt_after_idx.jpg" alt="" /></p>
+
+  <p>It’s definitely faster. And if we scale it would do so in O(log(n)) time, which isn’t too bad. But, if we ever scale the repositories we track it will still slow down somewhat.</p>
+
+  <p>We prefer the O(1) complexity of a circular queue data structure.</p>
+
+  <p>Enter Redis; Redis is often used as a shared queue for workers. It allows us to implement the circular queue directly. Here is an example benchmark to get an idea of its throughput:</p>
+
+  <p><img src="/assets/article/12_redis_benchmark.jpg" alt="" /></p>
+
+  <p>Since we use the queue data structure, the operation is always O(1). On top of that, our system is now more orthogonal as the concerns of storage and coordination are separate.</p>
+
+  <h3 id="collaboration">Collaboration</h3>
+
+  <p>Here is the how collaboration is implemented with Redis:</p>
+
+  <p><img src="/assets/article/13_obj_collab.png" alt="" /></p>
+
+  <p>There is a queue object that is a layer on top of Redis which manages the queue. The dispatcher, the interface between the scrapers and the queue, then requests the next repository from the queue object. The queue object shifts a repository from the front of the Redis queue, copies it, and immediately pushes it to the back of the queue. The dispatcher gets a clone and passes the data from the queue to its collaborating scraper agents.</p>
+
+  <h3 id="scale-up">Scale Up?</h3>
+
+  <p>Now that the scrapers can coordinate via the Redis queue, the next question is whether to scale up or scale out. We could scale up and stack concurrent on one high memory server.</p>
+
+  <hr />
+  <p><strong>Discovery:</strong> We had a few concerns like our IP being blacklisted by Github so we did some testing and it turned out to be a non issue for our use case.</p>
+
+  <p>Initially, we were being throttled hard (because we looked like a bot–which we were) but we soon realized this was only for <em>repeatedly hitting the same url hundreds of times</em> if instead we used a round-robin approach Github was none the wiser.</p>
+  <hr />
+
+  <p><img src="/assets/article/14_concurrent_diminishing_returns.png" alt="" /></p>
+
+  <p>Our processes are memory hogs, but it doesn’t matter as more than two processes give diminishing returns. Dollar for dollar it would be better ROI to scale up, and maximize our low memory machines and then scale out from there.</p>
+
+  <p>We spin up a second process on our server…</p>
+
+  <blockquote>
+  <p>Capacity: 400,000 Requests Per Day<br />
+  Time Through Repositories: 18 Hours<br />
+  Capacity Needed: 1 Million Requests Per Day<br />
+  Processes: 2<br />
+  Servers: 1</p>
+  </blockquote>
+
+  <h3 id="scaling-out">Scaling Out</h3>
+
+  <p>We are doing a decent job of maximizing our machines so we spun up two more servers with two processes each.</p>
+
+  <blockquote>
+  <p>Capacity: 1,200,000 Requests Per Day<br />
+  Time Through Repositories: <strong>6 Hours</strong><br />
+  Processes: 6 <br />
+  Servers: 3</p>
+  </blockquote>
+
+  <p>Now, four times a day (every 6 hours) we scrape the top 100,000 repositories on Github using 3 servers (represented by the dispatcher objects) which are coordinated by a Redis queue. This is well within our 8 hour window!</p>
+
+  <p>In total, roughly 1.2 million requests per day are made to Github (don’t worry, we won’t be overwhelming them anytime soon).</p>
+
+  <p>An updated system overview:</p>
+
+  <p><img src="/assets/article/15_more_the_merrier.png" alt="" /></p>
+
+  <p>We now have many servers with multiple processes sharing a single queue on Redis. Everything is great!</p>
+
+  <p>Or is it?</p>
+
+  <hr />
+  <p><strong>Note:</strong> We can get more out of our hardware. Our processes are memory hogs. However, the tradeoff of developer time spent working on optimizing an already cheap process was not worth the opportunity cost of further development.</p>
+
+  <hr />
+
+  <h2 id="cant-work-too-busy-robust-processes-and-centralized-control">Can’t Work, Too Busy: Robust Processes and Centralized Control</h2>
+
+  <h3 id="more-servers-more-headaches">More Servers, More Headaches</h3>
+
+  <p>Now that we have six processes, all of them must be micromanaged. Why? The remote SSH connection (to each process) must remain open on our local machine to run the scraper process. Overall, this means six open connections for monitoring, controlling, and restarting. Do I need to tell you this is <em>extremely</em> time consuming?</p>
+
+  <p>A normal day might look like the following: wake up, check on the processes from the night before, and—</p>
+
+  <p><em>Gasp!</em> The scrapers all crashed in the middle of the night!</p>
+
+  <p><img src="/assets/article/16_dilbert.jpg" alt="" /></p>
+
+  <p>Losing this valuable time meant we lost hundreds of thousands of requests.  We would then debug and redeploy with no guarantee that we wouldn’t run into some other edge-case.</p>
+
+  <p>On top of all of this was an additional cost of cognitive load:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="n">every</span><span class="o">.</span><span class="mi">10</span><span class="p">.</span><span class="nf">seconds</span> <span class="k">do</span>
+  <span class="n">train_of_thought</span><span class="p">.</span><span class="nf">derail</span>
+
+  <span class="k">if</span> <span class="n">scraper</span><span class="p">.</span><span class="nf">down?</span>
+    <span class="n">train_of_thought</span><span class="p">.</span><span class="nf">crash</span>
+    <span class="n">scraper</span><span class="p">.</span><span class="nf">debug</span>
+    <span class="n">scraper</span><span class="p">.</span><span class="nf">start</span>
+    <span class="n">dev</span><span class="p">.</span><span class="nf">pray</span>
+  <span class="k">end</span>
+  <span class="k">end</span>
+  </code></pre>
+  </div>
+
+  <p>Babysitting the scrapers meant we were constantly distracted. This grew especially tiresome whenever we needed full concentration to focus on something important; not a very efficient use of time at all.</p>
+
+  <p>Much of this had to do with handling brittle data. We were essentially trying to rescue every edge-case for data we can’t control. This cost too much time. We needed failover and process recycling.</p>
+
+  <h3 id="how-can-we-stop-micromanaging-our-scrapers">How can we stop micromanaging our scrapers?</h3>
+
+  <p>As we mentioned, in order to keep the scrapers running, a connection had to remain alive between our local machines and the remote ones. Why? The scraper process is attached to the SSH session. In Linux, everything is a process and the scraper process is a child process of our SSH session. Therefore if the ssh session dies, so too does the scraper process.</p>
+
+  <p>We need to detach from the SSH session and move the scraper to a background process. When a process is forked and then exits, it becomes an orphan. Any orphan processes are then gathered up by the init process, the “grandfather” of all other processes.</p>
+
+  <p>Enter daemons. Daemons are background processes that are in no way attached to a terminal so we can close the SSH connection and it will still run. One of the downsides of this is the necessity of thorough logging: no longer will the SSH connection be active, which means that even if the daemon’s output was printed to STDOUT, there would be no way to see it.</p>
+
+  <h3 id="binding-daemons-to-our-will">Binding Daemons to Our Will</h3>
+
+  <p>We have these background processes, so how do we ensure the daemons are always running? We first considered Monit, but it was much, much more than we needed and the time required to familiarize ourselves with it just wasn’t worth it.</p>
+
+  <p>In the end, a simple Bash script was settled on:</p>
+
+  <div class="language-sh highlighter-rouge"><pre class="highlight"><code><span class="k">while </span><span class="nb">true
+  </span><span class="k">do
+  </span>rake ScraperDispatcher:scrape_commits
+  <span class="k">done</span>
+  </code></pre>
+  </div>
+
+  <p>Each scraper process is run as a Rake task wrapped within an infinite Bash loop. In the case that the Rake task crashes, it restarts the process. The only way this loop will every be interrupted is if our server crashes or the bash process is killed.</p>
+
+  <p>We initiate this entire management process with a CLI application.</p>
+
+  <h3 id="the-power-of-daemons">The Power of Daemons</h3>
+
+  <p>Below, you can see the status call of the CLI app we’ve written to remotely manage our daemons:</p>
+
+  <p><img src="/assets/article/17_the_power_of_daemons.jpg" alt="" /></p>
+
+  <p>From our one console, with a few keyboard strokes, we can check on all of our scrapers. Centralized control makes deployment simple, monitoring a joy (if that’s a thing), and restarting painless. No longer do the processes have to be micromanaged.</p>
+
+  <h2 id="growing-pains-system-bottlenecks-and-system-tuning">Growing Pains: System Bottlenecks and System Tuning</h2>
+
+  <p>We’ve been acquiring data during the 7 days that we’ve been working on the project and the database has reached a few hundred-thousand records.</p>
+
+  <h3 id="more-questions-more-data">More Questions, More Data</h3>
+
+  <p>We want to answer questions related to the past 30 and 90 days. We could wait 83 days, but we are programmers; we can do better. The next phase involved scraping the last 90 days of data as a one-time job. Our estimate was that it would take roughly 3 days with our 6 processes.</p>
+
+  <h3 id="more-data-more-problems">More data, More Problems</h3>
+
+  <p>We tweaked our scrapers to grab historical data related over the past 90 days. As we quickly found out, more data meant new problems:</p>
+
+  <p><img src="/assets/article/18_more_data_more_problems.jpg" alt="" /></p>
+
+  <p>Only scraping daily data brought in around 25,000 new records a day, but we were now getting hundreds of thousands to millions of records a day. Our request capacity quickly plummeted to 30% of what we expected.</p>
+
+  <blockquote>
+  <p>Capacity: ~300,000 Requests Per Day <br />
+  Time Through Repositories: 24 Hours
+  Capacity Needed: 1 Million Requests Per Day <br />
+  Processes: 6 <br />
+  Servers: 3 <br /></p>
+  </blockquote>
+
+  <p>We’ve been downshifted…</p>
+
+  <p><img src="/assets/article/19_downshifted.jpg" alt="" /></p>
+
+  <p>At 30% capacity (of 1.2 Million requests), it will take 10 days to retrieve all the data needed. That’s far too long.</p>
+
+  <h3 id="putting-on-our-thinking-caps">Putting on Our Thinking Caps</h3>
+
+  <p>Our scrapers are waiting on something in the system. What should be considered?</p>
+
+  <p><img src="/assets/article/20_thinking_1.png" alt="" /></p>
+
+  <p>Well, our server activity hasn’t increased, in fact it has decreased, so we can eliminate the scraper servers right off the bat.</p>
+
+  <p><img src="/assets/article/20_thinking_2.png" alt="" /></p>
+
+  <p>Our request activity has decreased, so it can’t be anything to do with Github.</p>
+
+  <p><img src="/assets/article/21_thinking_2.png" alt="" /></p>
+
+  <p>The only difference is the number of records that are being retrieved. Now that our responses are often rich with new data that needs to be stored, is it possible the DB server is being overwhelmed? No, the CPU usage is high, but far from being overwhelmed.</p>
+
+  <p><img src="/assets/article/22_thinking_3.png" alt="" /></p>
+
+  <p>All that remains is something to do with Postgres or the connections to Postgres.</p>
+
+  <p><img src="/assets/article/23_thinking_4.png" alt="" /></p>
+
+  <h3 id="is-postgres-itself-being-overwhelmed">Is Postgres Itself being Overwhelmed?</h3>
+
+  <p>With 6 processes, we are writing to the database more often. Is it possible that Postgres can’t handle writes from all six servers at once?</p>
+
+  <p>Here is a benchmark of the insertion speed into Postgres:</p>
+
+  <p><img src="/assets/article/24_pg_insertion_benchmark.jpg" alt="" /></p>
+
+  <p>PG Insertion Capacity
+  = (60 / .000202) insertions / min<br />
+  = <strong>297,029</strong> insertions / min</p>
+
+  <p>Current AVG Rate of Insertions = 2000 insertions / min</p>
+
+  <p>With the current rate &lt; 1% of capacity, insertions are not the problem. We will have to keep sleuthing…</p>
+
+  <h2 id="is-it-slow-reads">Is it Slow Reads?</h2>
+
+  <p>If the problem isn’t insertions, what about reads? Here is an example of attempting to find an issue if it exists, else make a new one:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="n">issue</span> <span class="o">=</span> <span class="no">Issue</span><span class="p">.</span><span class="nf">find_or_create_by</span><span class="p">(</span>
+  <span class="ss">repository_id: </span><span class="n">built_issue</span><span class="p">[</span><span class="s1">'repository_id'</span><span class="p">],</span>
+  <span class="ss">issue_number: </span><span class="n">built_issue</span><span class="p">[</span><span class="s1">'issue_number'</span><span class="p">]</span>
+  <span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">i</span><span class="o">|</span>
+  <span class="n">i</span><span class="p">.</span><span class="nf">name</span> <span class="o">=</span> <span class="n">built_issue</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span>
+  <span class="p">.</span><span class="nf">.</span><span class="p">.</span>
+  <span class="nf">end</span>
+  <span class="n">issues</span> <span class="o">&lt;&lt;</span> <span class="n">issue</span>
+  </code></pre>
+  </div>
+
+  <p>This is necessary as there is a need to associate issues with their respective comments:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="c1"># Get all the comments for each issue</span>
+  <span class="n">issues</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">issue</span><span class="o">|</span>
+  <span class="p">.</span><span class="nf">.</span><span class="p">.</span>
+  <span class="nf">raw_comments</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">raw_comment</span><span class="o">|</span>
+    <span class="p">.</span><span class="nf">.</span><span class="p">.</span>
+    <span class="nf">comment_hash</span><span class="p">[</span><span class="s1">'issue_id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">issue</span><span class="p">.</span><span class="nf">id</span>
+    <span class="vi">@comments_cache</span> <span class="o">&lt;&lt;</span> <span class="no">IssueComment</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">comment_hash</span><span class="p">)</span>
+  <span class="k">end</span>
+  <span class="k">end</span>
+  </code></pre>
+  </div>
+
+  <p>We began to benchmark our queries and we noticed that when a search is made for each issue, it is done on two non-indexed columns. This sequential scan is O(n) because we need to scan two columns of arbitrary size. If we index these columns together, the complexity can be reduced to O(log(n)).</p>
+
+  <p>Here is before indexing:</p>
+
+  <p><img src="/assets/article/25_indexing_benchmark_before.jpg" alt="" /></p>
+
+  <p>and after indexing:</p>
+
+  <p><img src="/assets/article/26_indexing_benchmarks_after.png" alt="" /></p>
+
+  <p>Before, it took a whopping 341 ms just to look up an issue in the table with a sequential scan.</p>
+
+  <p>After, it does a heap scan which significantly impacted the lookup time; a 2700X difference. From then on we knew to keep a close eye on other similar situations.</p>
+
+  <h3 id="gaining-speed">Gaining Speed…</h3>
+  <blockquote>
+  <p>Capacity: ~700,000 Requests Per Day <br />
+  Time Through Repositories: 12 Hours <br />
+  Capacity Needed: 1 Million Requests Per Day <br /></p>
+  </blockquote>
+
+  <p><img src="/assets/article/27_gaining_speed.png" alt="" /></p>
+
+  <p>We picked up a great deal of speed with the index. At this moment in time, the system was running around 60% capacity.</p>
+
+  <p>While this was much better, it was still slow…</p>
+
+  <h3 id="is-it-aggregate-latency-many-queries-over-the-wire">Is it Aggregate Latency (many queries over the wire)?</h3>
+
+  <p>Our queries are now fast enough, but are too many being made? Again, it required looking through our code and thinking about how it was interacting with the database. Eventually, this caught our eye:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="c1"># Get all the comments for each issue</span>
+  <span class="n">issues</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">issue</span><span class="o">|</span>
+  <span class="p">.</span><span class="nf">.</span><span class="p">.</span>
+  <span class="nf">raw_comments</span> <span class="o">=</span> <span class="vi">@github_doc</span><span class="p">.</span><span class="nf">doc</span><span class="p">.</span><span class="nf">css</span><span class="p">(</span><span class="s2">"div.timeline-comment-wrapper"</span><span class="p">)</span>
+  <span class="n">raw_comments</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">raw_comment</span><span class="o">|</span>
+    <span class="n">comment_hash</span> <span class="o">=</span> <span class="n">build_comment</span><span class="p">(</span><span class="n">raw_comment</span><span class="p">)</span>
+    <span class="n">comment_hash</span><span class="p">[</span><span class="s1">'issue_id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">issue</span><span class="p">.</span><span class="nf">id</span>
+    <span class="vi">@comments_cache</span> <span class="o">&lt;&lt;</span> <span class="no">IssueComment</span><span class="p">.</span><span class="nf">create</span><span class="p">(</span><span class="n">comment_hash</span><span class="p">)</span>
+  <span class="k">end</span>
+  <span class="p">.</span><span class="nf">.</span><span class="o">.</span>
+  </code></pre>
+  </div>
+
+  <p>A query was being made for each and every issue comment that was created. What if, instead, we cached records in memory and replaced many separate queries with one bulk import?</p>
+
+  <h3 id="aggregate-latency-begone">Aggregate Latency Begone!</h3>
+
+  <p>Instead of immediately attempting to create an issue comment, a new IssueComment model instance is added to an array so that the above code now looks like this:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="c1"># Get all the comments for each issue</span>
+  <span class="n">issues</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">issue</span><span class="o">|</span>
+  <span class="p">.</span><span class="nf">.</span><span class="p">.</span>
+  <span class="nf">raw_comments</span> <span class="o">=</span> <span class="vi">@github_doc</span><span class="p">.</span><span class="nf">doc</span><span class="p">.</span><span class="nf">css</span><span class="p">(</span><span class="s2">"div.timeline-comment-wrapper"</span><span class="p">)</span>
+  <span class="p">.</span><span class="nf">.</span><span class="p">.</span>
+  <span class="nf">raw_comments</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">raw_comment</span><span class="o">|</span>
+    <span class="n">comment_hash</span> <span class="o">=</span> <span class="n">build_commnet</span><span class="p">(</span><span class="n">raw_comment</span><span class="p">)</span>
+    <span class="n">comment_hash</span><span class="p">[</span><span class="s1">'issue_id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">issue</span><span class="p">.</span><span class="nf">id</span>
+    <span class="vi">@comments_cache</span> <span class="o">&lt;&lt;</span> <span class="no">IssueComment</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">comment_hash</span><span class="p">)</span>
+  <span class="k">end</span>
+  <span class="p">.</span><span class="nf">.</span><span class="o">.</span>
+  </code></pre>
+  </div>
+
+  <p>And whenever the array cache reaches above 30 records, a batch insert is made on all records in the cache:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="c1"># Continuing from above...</span>
+  <span class="p">.</span><span class="nf">.</span><span class="p">.</span>
+  <span class="nf">if</span> <span class="vi">@comments_cache</span><span class="p">.</span><span class="nf">count</span> <span class="o">&gt;</span> <span class="mi">30</span>
+    <span class="no">IssueComment</span><span class="p">.</span><span class="nf">import</span><span class="p">(</span><span class="vi">@comments_cache</span><span class="p">)</span>
+    <span class="vi">@comments_cache</span><span class="p">.</span><span class="nf">clear</span>
+  <span class="k">end</span>
+  <span class="k">end</span>
+  </code></pre>
+  </div>
+
+  <p>Why 30? It just so happens that is the maximum number of issues on a page.</p>
+
+  <p>Here is a visualization:</p>
+
+  <p><strong>Many Queries</strong></p>
+
+  <p><img src="/assets/article/28_many_pings.png" alt="" /></p>
+
+  <p><strong>Single Query</strong></p>
+
+  <p><img src="/assets/article/29_single_ping.png" alt="" /></p>
+
+  <p>This is just a visualization. The latency between the scraper server and database server is extremely fast, less than a millisecond, but if latency exists for every single query, and a large number of them are made, then the latency starts to add up. In this case, it meant around 30 less round trips to for each bulk import.</p>
+
+  <h3 id="vrrrr">Vrrrr…</h3>
+
+  <blockquote>
+  <p>Capacity: ~900,000 Requests Per Day <br />
+  Time Through Repositories: 8 Hours <br />
+  Capacity Needed: 1 Million Requests Per Day <br /></p>
+  </blockquote>
+
+  <p><img src="/assets/article/30_vrrr.png" alt="" /></p>
+
+  <p>At this point, we are somewhere near 80% capacity, but we didn’t give up the pursuit of optimization quite yet…</p>
+
+  <h3 id="behind-the-orm-curtain">Behind the ORM Curtain</h3>
+
+  <p>Say we have the following validation:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">IssueComment</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+  <span class="p">.</span><span class="nf">.</span><span class="p">.</span>
+  <span class="nf">validates</span> <span class="ss">:github_created_at</span><span class="p">,</span> <span class="ss">uniqueness: </span><span class="p">{</span> <span class="ss">scope: </span><span class="p">[</span><span class="ss">:issue_id</span><span class="p">]</span> <span class="p">}</span>
+  <span class="k">end</span>
+  </code></pre>
+  </div>
+
+  <p>Behind the scenes, ActiveRecord sends another query over the wire <strong>every time we attempt to create a record</strong>:</p>
+
+  <p><img src="/assets/article/31_orm_curtain_extra_query.png" alt="" /></p>
+
+  <p>Above, we spoke of reducing total queries from around 30 to 1, but in reality they were being reduced from around 60 to 31. All the validation queries were being fired separately, one-by-one behind the scenes for each insertion.</p>
+
+  <p>If the validation is pushed down to the database as a constraint, the no longer will an extra query be made for a creation attempt…</p>
+
+  <h3 id="pushing-validations-to-the-database">Pushing Validations to the Database</h3>
+
+  <p>Here is a snapshot of what the constraint now looks like:</p>
+
+  <p><img src="/assets/article/32_orm_curtain_db_layer_validation.png" alt="" /></p>
+
+  <p>And here is a creation attempt:</p>
+
+  <p><img src="/assets/article/33_orm_curtain_no_ar_validation.png" alt="" /></p>
+
+  <p>As you can see, no more extra queries! We have successfully reduced the number of queries from around 60 to 1!</p>
+
+  <h3 id="vrr-oom">Vrr-OOM!</h3>
+
+  <blockquote>
+  <p>Capacity: ~1,000,000 Requests Per Day <br />
+  Time Through Repositories: ~7 Hours <br />
+  Capacity Needed: 1 Million Requests Per Day <br /></p>
+  </blockquote>
+
+  <p><img src="/assets/article/34_vrroooom.png" alt="" /></p>
+
+  <p>At this point, we are now back to the capacity that we had originally anticipated. You’ll notice that 5th gear was never reached! That is not a mistake. Our acquisition could still be further tuned, but we’ll get to that later.</p>
+
+  <h2 id="exploring-the-data">Exploring the Data</h2>
+
+  <p>After all of that hard work, how about we take a look at some of the data we’ve collected? by going back back to the webpage:</p>
+
+  <p><img src="/assets/article/35_explore_data.png" alt="" /></p>
+
+  <p>Initially, it took about a minute to load. That is about as fast as this stone turtle:</p>
+
+  <p><img src="/assets/article/36_stone_turtle.jpg" alt="" /></p>
+
+  <p>No one wants to see OSW that bad!</p>
+
+  <h3 id="putting-our-thinking-caps-back-on">Putting our Thinking Caps Back On…</h3>
+
+  <p>This is a typical query (1 of 16) displayed on the webpage:</p>
+
+  <div class="language-sql highlighter-rouge"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">users</span><span class="p">.</span><span class="o">*</span><span class="p">,</span> <span class="k">count</span><span class="p">(</span><span class="n">users</span><span class="p">.</span><span class="n">id</span><span class="p">)</span> <span class="k">AS</span> <span class="n">hit_count</span>
+  <span class="k">FROM</span> <span class="nv">"users"</span> <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">issue_comments</span>
+  <span class="k">ON</span> <span class="n">issue_comments</span><span class="p">.</span><span class="n">user_id</span> <span class="o">=</span> <span class="n">users</span><span class="p">.</span><span class="n">id</span>
+  <span class="k">WHERE</span> <span class="p">(</span><span class="nv">"issue_comments"</span><span class="p">.</span><span class="nv">"github_created_at"</span>
+  <span class="k">BETWEEN</span> <span class="p">(</span><span class="k">CURRENT_DATE</span> <span class="o">-</span> <span class="n">INTERVAL</span> <span class="s1">'0 day'</span> <span class="o">+</span> <span class="n">TIME</span> <span class="s1">'00:00:00'</span><span class="p">)</span>
+  <span class="k">AND</span> <span class="p">(</span><span class="k">CURRENT_DATE</span> <span class="o">+</span> <span class="n">TIME</span> <span class="s1">'23:59:59.99'</span><span class="p">)</span> <span class="p">)</span>
+  <span class="k">GROUP</span> <span class="k">BY</span> <span class="n">users</span><span class="p">.</span><span class="n">id</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">hit_count</span> <span class="k">desc</span><span class="p">;</span>
+  </code></pre>
+  </div>
+  <p>Here is an analysis of the query above:</p>
+
+  <p><img src="/assets/article/37_front_end_execution_time.png" alt="" /></p>
+
+  <p>The query takes almost 13 seconds (remember, this is 1 out of 16 total queries that need to be made). It’s slow. Very slow. And there is no way around that.</p>
+
+  <p>But why is it slow?</p>
+
+  <p>Well, we have to join a couple tables that have millions of rows:</p>
+
+  <p><img src="/assets/article/38_front_end_merge_join.png" alt="" /></p>
+
+  <p>Then we do some aggregating:</p>
+
+  <p><img src="/assets/article/39_front_end_aggregate.png" alt="" /></p>
+
+  <p>Can we optimize our query? There is no obvious solution there.</p>
+
+  <p>Can we denormalize and remove the costly join? Yes. If we did that we would could potentially cut the query time in half, or 25 seconds. That still would not be enough. We need ALL queries together to take less than 100 ms so that the webpage load times do make a negative impact on the user’s experience.</p>
+
+  <p>We need orders of magnitude difference in speed!</p>
+
+  <h3 id="can-we-cache-the-query">Can we Cache the Query?</h3>
+
+  <p>Looking at the query again:</p>
+
+  <div class="language-sql highlighter-rouge"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">users</span><span class="p">.</span><span class="o">*</span><span class="p">,</span> <span class="k">count</span><span class="p">(</span><span class="n">users</span><span class="p">.</span><span class="n">id</span><span class="p">)</span> <span class="k">AS</span> <span class="n">hit_count</span>
+  <span class="k">FROM</span> <span class="nv">"users"</span> <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">issue_comments</span>
+  <span class="k">ON</span> <span class="n">issue_comments</span><span class="p">.</span><span class="n">user_id</span> <span class="o">=</span> <span class="n">users</span><span class="p">.</span><span class="n">id</span>
+  <span class="k">WHERE</span> <span class="p">(</span><span class="nv">"issue_comments"</span><span class="p">.</span><span class="nv">"github_created_at"</span>
+  <span class="k">BETWEEN</span> <span class="p">(</span><span class="k">CURRENT_DATE</span> <span class="o">-</span> <span class="n">INTERVAL</span> <span class="s1">'0 day'</span> <span class="o">+</span> <span class="n">TIME</span> <span class="s1">'00:00:00'</span><span class="p">)</span>
+  <span class="k">AND</span> <span class="p">(</span><span class="k">CURRENT_DATE</span> <span class="o">+</span> <span class="n">TIME</span> <span class="s1">'23:59:59.99'</span><span class="p">)</span> <span class="p">)</span>
+  <span class="k">GROUP</span> <span class="k">BY</span> <span class="n">users</span><span class="p">.</span><span class="n">id</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">hit_count</span> <span class="k">desc</span><span class="p">;</span>
+  </code></pre>
+  </div>
+
+  <p>There is no interpolation of user input; the queries that we make on the webpage never change and because they never change, we can run them in advance and cache them.</p>
+
+  <p>Taking a big-picture look at the system, is it okay for our data to be stale? Yes. We scrape the top 100,000 repositories every 6 hours, so we already have a 6 hour margin of error. Keeping our queries perfectly in sync with our database doesn’t add any meaningful business value.</p>
+
+  <p>With these criteria considered, we can go ahead with the caching.</p>
+
+  <h3 id="lazily-loaded-table-caching---custom-tables">Lazily Loaded Table Caching - Custom Tables?</h3>
+
+  <p>Lazily loaded caching is required because our system is heavily geared towards write operations.</p>
+
+  <p>One option for lazily loaded caching included the following:</p>
+  <ol>
+  <li>Build a lazily refreshed custom table</li>
+  <li>But then functions would need to be created to update timestamps with:
+    <ul>
+      <li>insertion</li>
+      <li>update</li>
+      <li>delete</li>
+    </ul>
+  </li>
+  <li>Finally, we would need to specify a function to handle actually updating stale rows</li>
+  </ol>
+
+  <p><strong>OR</strong></p>
+
+  <p>We could use Postgres’ built-in materialized views and refresh periodically with a cron job which looks like this:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="n">every</span> <span class="mi">5</span><span class="p">.</span><span class="nf">minutes</span> <span class="k">do</span>
+  <span class="n">rake</span> <span class="s1">'refresh_matviews'</span>
+  <span class="k">end</span>
+  </code></pre>
+  </div>
+
+  <h3 id="the-materialized-view-impact">The Materialized View Impact</h3>
+
+  <p>Depending on the database solution, there will be different ways to create views and cache queries. For those of you familiar with Postgres, all that is needed is a built-in keyword to tell PG to cache the query results:</p>
+
+  <div class="language-sql highlighter-rouge"><pre class="highlight"><code><span class="o">#</span> <span class="k">Cache</span> <span class="k">view</span><span class="o">/</span><span class="n">query</span>
+  <span class="k">CREATE</span> <span class="n">MATERIALIZED</span> <span class="k">VIEW</span> <span class="n">my_cached_query</span> <span class="k">AS</span> <span class="p">[</span><span class="k">SQL</span> <span class="n">query</span> <span class="n">goes</span> <span class="n">here</span><span class="p">];</span>
+  </code></pre>
+  </div>
+
+  <p>That query can then be queried as if it were a table:</p>
+
+  <div class="language-sql highlighter-rouge"><pre class="highlight"><code><span class="o">#</span> <span class="n">Query</span> <span class="k">like</span> <span class="n">a</span> <span class="n">normal</span> <span class="k">table</span>
+  <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">my_cached_query</span><span class="p">;</span>
+  </code></pre>
+  </div>
+
+  <p>The query will need to be refreshed periodically (in our case we did this with a cron job):</p>
+
+  <div class="language-sql highlighter-rouge"><pre class="highlight"><code><span class="o">#</span> <span class="n">Refresh</span> <span class="n">the</span> <span class="k">view</span>
+  <span class="n">REFRESH</span> <span class="n">MATERIALIZED</span> <span class="k">VIEW</span> <span class="n">my_cached_query</span><span class="p">;</span>
+  </code></pre>
+  </div>
+
+  <p>Disclaimer: materialized views are only useful for static SQL queries that can be allowed to have stale data. We qualified this by only updating the matviews every ten minutes.</p>
+
+  <p>The impact of using materialized views is huge…</p>
+
+  <h4 id="queries-are-250-times-faster">Queries are 2,50 times faster!</h4>
+
+  <p>That is almost as fast as the round trip to our server and back! Awesome!</p>
+
+  <h3 id="until-we-added-that-n1-query">Until We Added that N+1 Query…</h3>
+
+  <p>One of the questions we try to answer involves displaying a repository for each active issue we were displaying:</p>
+
+  <div class="language-erb highlighter-rouge"><pre class="highlight"><code><span class="cp">&lt;%</span> <span class="vi">@issues</span><span class="p">.</span><span class="nf">each_with_index</span> <span class="k">do</span> <span class="o">|</span><span class="n">issue</span><span class="o">|</span> <span class="cp">%&gt;</span>
+  <span class="nt">&lt;tr&gt;</span>
+  <span class="nt">&lt;td&gt;</span>
+    <span class="cp">&lt;%=</span> <span class="n">link_to</span> <span class="n">issue</span><span class="p">.</span><span class="nf">repository_name</span><span class="p">,</span> <span class="n">issue</span><span class="p">.</span><span class="nf">repository_url</span> <span class="cp">%&gt;</span>
+    ...
+  </code></pre>
+  </div>
+
+  <p>For each issue, there is an additional query made for the associated repository. Here is what it looks like at the database level:</p>
+
+  <p><img src="/assets/article/40_n_plus_one_before.png" alt="" /></p>
+
+  <p>To fix it, a join was added so that the repository information needed already lived on the cached query:</p>
+
+  <div class="language-sql highlighter-rouge"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">tmp</span><span class="p">.</span><span class="o">*</span><span class="p">,</span> <span class="n">repositories</span><span class="p">.</span><span class="n">name</span>
+  <span class="k">AS</span> <span class="n">repository_name</span><span class="p">,</span> <span class="n">repositories</span><span class="p">.</span><span class="n">url</span>
+  <span class="k">AS</span> <span class="n">repository_url</span>
+  <span class="k">FROM</span> <span class="p">(</span>
+  <span class="p">...</span>
+  <span class="p">)</span> <span class="k">as</span> <span class="n">tmp</span>
+  <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">repositories</span> <span class="k">ON</span> <span class="n">repositories</span><span class="p">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">tmp</span><span class="p">.</span><span class="n">repository</span><span class="p">;</span>
+  </code></pre>
+  </div>
+
+  <p>Now when the server-side rendering looks like this at the database level:</p>
+
+  <p><img src="/assets/article/41_n_plus_one_after.png" alt="" /></p>
+
+  <p>No more N+1!</p>
+
+  <h3 id="impact-of-database-level-caching">Impact of Database Level Caching</h3>
+
+  <p>After all of this, it helped us achieve the following:</p>
+
+  <p><strong>50+ s query times ** to **200 ms</strong></p>
+
+  <p>and with four queries per page…</p>
+
+  <p><strong>50 ms query time per page</strong></p>
+
+  <p>Huge improvement!</p>
+
+  <h2 id="making-requests-count">Making Requests Count</h2>
+
+  <p>If you remember, we were handling our repositories like this:</p>
+
+  <p><img src="/assets/article/42_obj_collab.png" alt="" /></p>
+
+  <p>It’s a “stupid” circular queue, meaning all repositories are scraped at the same rate.</p>
+
+  <h3 id="not-all-repositories-are-created-equal">Not All Repositories are Created Equal</h3>
+
+  <p>Treating all repositories the same in relation to scraping is rather unfortunate because the top 1% of repositories by commit activity are responsible for 42% of commits:</p>
+
+  <p><img src="/assets/article/43_not_all_repos.png" alt="" /></p>
+
+  <p>On top of that, the top 40% of repositories by activity account for 99% of the top 100,000!</p>
+
+  <p>Maybe it’s unfair, but more active repositories should be updated more often so as to reduce the latency between when the activity is pushed to Github and our webpage.</p>
+
+  <h3 id="priority-queue">Priority Queue?</h3>
+
+  <p>Priority is key.</p>
+
+  <p>Let’s think about what is needed. Take a look at the following chart:</p>
+
+  <p><img src="/assets/article/44_repos_list.png" alt="" /></p>
+
+  <p>Say, for example, there is a list of repositories in Redis and the numbers above represent their activity rank where 10 is the most active.</p>
+
+  <p>When the queue is first popped, the most active repository is popped and then maybe we put it somewhere in the middle:</p>
+
+  <p><img src="/assets/article/45_repos_10_insert.png" alt="" /></p>
+
+  <p>The next time the queue is popped, the second-most active repository is removed from the queue and placed further down the from the middle as it is less active than the previous repository and therefore needs to be scraped less:</p>
+
+  <p><img src="/assets/article/46_repos_other_insert.png" alt="" /></p>
+
+  <p>But how, exactly, will it be implemented?</p>
+
+  <h3 id="failed-priority-queue-experiment-binary-heap">Failed Priority Queue Experiment: Binary Heap</h3>
+
+  <p>The first idea was to create a binary heap and maintain it as a priority queue. This was originally look at because priority queues are common use cases for binary heaps.</p>
+
+  <p>What is a binary heap<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup>? Put simply, it is a balanced and complete tree:</p>
+
+  <p><img src="/assets/article/47_heap.png" alt="" /></p>
+
+  <p>It has a “heap property”, meaning all nodes are greater than or equal to their respective children. In other words, the highest scored element will always be the root of the tree.</p>
+
+  <p>The most promising feature is that a binary heap can easily be represented as an array. The representation works as follows: the children of an i-th element are always 2i and 2i + 1. This means it can be represented in Redis with ease:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="c1"># Example of heap expressed as array</span>
+  <span class="p">[</span><span class="kp">nil</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">36</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">]</span>
+  </code></pre>
+  </div>
+
+  <p>Wait… can we resort to this so simply? No. A value is pushed by adding it to the end of the array and then bubbling it, or heapifying it, through the tree. That entails multiple requests or pulling down the entire state of the Redis queue for resorting.  Also, what happens when multiple scrapers are involved:</p>
+
+  <p><img src="/assets/article/48_redis_concurr_probs.png" alt="" /></p>
+
+  <p>If multiple scrapers are attempting to bubble values up through Redis, or dequeueing while other processes are enqueueing?</p>
+
+  <p>Put simple: it won’t work. We could no longer be certain the root value is the highest scored or that any other values are where they should be if any of the enqueueing or dequeueing is done in parallel.</p>
+
+  <h3 id="failed-priority-queue-experiments-sorted-sets">Failed Priority Queue Experiments: Sorted Sets</h3>
+
+  <p>What else can we do? Well, Redis has a built-in data structure called a sorted set that holds key values where the key is the “score.” As an added bonus, Redis implements something similar to the binary heap behind the scenes and is smart enough to handle the concurrency problem for us. Great!</p>
+
+  <p>However, is Redis fast enough to re-sort 100,000 items faster than we can throw requests at it? Right, the  maximum number of requests with 6 processes is 14 requests per second. That means Redis has to resort 100,000 items 14 times a second in addition to creating a response. Even further, what if we double requests capacity down the line?</p>
+
+  <p>Good question. We didn’t benchmark it because there is a simpler, more important problem to consider. We have to score our values based on the priority level and then reduce the score based on the number of times they have been visited. An example calculation would like this:</p>
+
+  <p>score = priority / (times_scraped + 1)</p>
+
+  <p>If that is plotted for a few priority values it yields:</p>
+
+  <p><img src="/assets/article/49_decay_chart.png" alt="" /></p>
+
+  <p>One problem is that as time goes on, all scores approach zero which means that periodically we will have to shut everything down and reset the score. This additional process must be maintained and if for some reason it doesn’t refresh the scores then the whole priority queue breaks. Not only that, if capacity is increased without updating the process it breaks. There is a high maintenance cost involved with resorting to this method without even being sure Redis will be fast enough. Not to mention, how do we tune the frequency distribution? This sounds more painful than it should be.</p>
+
+  <p>What is really nice about a circular queue is that the oldest repository is always known and it is has the fastest possible enqueue and dequeue. Can we prioritize, but keep those advantages? Can we prioritize without scoring and sorting?</p>
+
+  <h3 id="what-do-we-really-want">What do we Really Want?</h3>
+
+  <p>Let’s go back to the ranked list of nodes:</p>
+
+  <p><img src="/assets/article/50_example_list.png" alt="" /></p>
+
+  <p>and let us lump this list into three priority levels like so:</p>
+
+  <p><img src="/assets/article/51_lumped_list.png" alt="" /></p>
+
+  <p>We are going to say say that the frequency ratio is 10:5:1. What we really need is to be able to control the frequency with which each priority level is scraped.</p>
+
+  <p>For example, 3 would be scraped 10X by shifting the first node from the front and pushing it to the back of the subset of nodes with a priority of 3:</p>
+
+  <p><img src="/assets/article/52_10x.png" alt="" /></p>
+
+  <p>And do the same with priority level 2 and 1 with frequencies of 5x and 1x respectively:</p>
+
+  <p><img src="/assets/article/53_5x_and_1x.png" alt="" /></p>
+
+  <p>All of this led to the following…</p>
+
+  <h3 id="staggered-round-robin-prioritized-queue-of-queues">Staggered Round-Robin Prioritized Queue-of-Queues!?</h3>
+
+  <p>To prioritize and tune the scraping frequency we used a staggered round-robin prioritized queue-of-queues.</p>
+
+  <p>Or SRRPQQ for short.</p>
+
+  <p>We began by ordering our list of repositories by activity and then range mapping that ordered list into X number of “buckets” where each bucket will get its own Redis queue:</p>
+
+  <p><img src="/assets/article/54_range_mapping.png" alt="" /></p>
+
+  <p>Then when the dispatcher requests a repository, it will actually be interacting with a priority queue object which has a method to draw from each bucket at the frequency we need:</p>
+
+  <p><img src="/assets/article/55_.dispatch_freq.png" alt="" /></p>
+
+  <p>This may appear to be a lot to take in, but it really just is a smart priority queue that allows us to easily give more attention to more active repositories and thereby reducing latency between when something is pushed to Github and when that information shows up on our webpage.</p>
+
+  <p>How is this all implemented?</p>
+
+  <h4 id="the-code-enqueueing">The Code: Enqueueing</h4>
+
+  <p>First, we calculate the size of each range:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="nf">enqueue_prioritized_sub_queues</span><span class="p">(</span><span class="n">tracked_repos</span><span class="p">)</span>
+  <span class="n">bucket_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">tracked_repos</span><span class="p">.</span><span class="nf">count</span><span class="p">.</span><span class="nf">to_f</span> <span class="o">/</span> <span class="no">PRIORITY_RANGE</span><span class="p">.</span><span class="nf">length</span><span class="p">).</span><span class="nf">ceil</span>
+  </code></pre>
+  </div>
+
+  <p>Then we range map the sorted list of tracked repositories:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code>  <span class="c1"># Enqueue a sub queue for each priority level</span>
+  <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="n">tracked_repos</span><span class="p">.</span><span class="nf">in_groups_of</span><span class="p">(</span><span class="n">bucket_size</span><span class="p">,</span> <span class="kp">false</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">batch</span><span class="o">|</span>
+  </code></pre>
+  </div>
+
+  <p>Then we create a stupid circular queue for each bucket and enqueue it into Redis:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code>    <span class="n">priority</span> <span class="o">=</span> <span class="no">PRIORITY_RANGE</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="n">queue_name</span> <span class="o">=</span> <span class="n">sub_queue_name</span><span class="p">(</span><span class="n">priority</span><span class="p">.</span><span class="nf">to_s</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">sub_queue</span> <span class="o">=</span> <span class="no">CircularRedisQueue</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="ss">queue_name: </span><span class="n">queue_name</span><span class="p">)</span>
+    <span class="n">sub_queue</span><span class="p">.</span><span class="nf">enqueue_redis</span>
+  <span class="k">end</span>
+  <span class="k">end</span>
+  </code></pre>
+  </div>
+
+  <h4 id="the-code-tuning-and-dequeueing">The Code: Tuning and Dequeueing</h4>
+
+  <p>We’ll now assume there are 3 circular queues in Redis. We then tune the frequency distribution of scraping in the priority queue object with a reference to each queue we that looks resembles something likes this:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+  </code></pre>
+  </div>
+
+  <p>Which is generated from the following method:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="nf">skewed_distr_of_queues</span><span class="p">(</span><span class="n">queues</span><span class="p">)</span>
+  <span class="n">skewed_queue_distr</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="k">while</span> <span class="n">queues</span><span class="p">.</span><span class="nf">length</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="n">queues</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">q</span><span class="o">|</span>
+      <span class="n">skewed_queue_distr</span> <span class="o">&lt;&lt;</span> <span class="n">q</span>
+    <span class="k">end</span>
+    <span class="n">queues</span><span class="p">.</span><span class="nf">pop</span>
+  <span class="k">end</span>
+  <span class="n">skewed_queue_distr</span>
+  <span class="k">end</span>
+  </code></pre>
+  </div>
+
+  <p>This above loop maps the number of references to the priority level e.g. 3 would be scraped 3 times, 2 two times, etc.</p>
+
+  <p>Now there is a circular queue of queues! To retrieve the next repository, we rely on the each circular queue object to know which repository to return:</p>
+
+  <div class="language-ruby highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="nf">next</span>
+  <span class="c1"># get leftmost queue and push to the end</span>
+  <span class="n">queue</span> <span class="o">=</span> <span class="vi">@queues</span><span class="p">.</span><span class="nf">shift</span>
+  <span class="vi">@queues</span><span class="p">.</span><span class="nf">push</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span>
+  <span class="c1"># return the next repository</span>
+  <span class="n">queue</span><span class="p">.</span><span class="nf">next</span>
+  <span class="k">end</span>
+  </code></pre>
+  </div>
+
+  <h3 id="frequency-distribution-of-scraping">Frequency Distribution of Scraping</h3>
+
+  <p>The code you saw previously gives us a distribution like this:</p>
+
+  <p><img src="/assets/article/56_untuned_freq.png" alt="" /></p>
+
+  <p>If we tune it further by modifying the population of queue references we achieve a distribution that more closely matches the activity of repositories.</p>
+
+  <p><img src="/assets/article/57_tuned_freq.png" alt="" /></p>
+
+  <p>The Staggered Round-Robin Queue-of-Queues is simple, as fast as possible (zero sorting), and gives precise control over the scraping distribution.</p>
+
+  <h2 id="the-future-and-beyond">The Future and Beyond</h2>
+
+  <p>What does the future hold for OSW? Let’s take a look…</p>
+
+  <h3 id="reaching-5th-gear">Reaching 5th Gear</h3>
+
+  <p>To start off, all top 100,000 repositories are scraped within a 5.5 hour time frame. We would like to push that to under an hour.</p>
+
+  <p>Right now, even though our queries are efficient enough, the scrapers still have to wait on them. Here is a diagram that represents the current state:</p>
+
+  <p><img src="/assets/article/58_sleepy_scraper.png" alt="" /></p>
+
+  <p>Instead of waiting on queries at all, we can maximize server resources if we git rid of the wait time altogether:</p>
+
+  <p><img src="/assets/article/59_bg_workers.png" alt="" /></p>
+
+  <p>Here we decouple the scrapers from the PG database by using background jobs to extract all record interaction into an asynchronous job that handles CRUD actions for the records. This way our scraper can be dedicated just to pulling data down as fast as possible. Altogether this should boost capacity to the maximum possible on each machine.</p>
+
+  <p>The other benefit is that the scrapers will use less memory because they wont’ need to know about the ORM. The extra memory that normally would have been loaded with each scraper can be used to for extra processes to ensure we are getting the most out of each server.</p>
+
+  <h3 id="for-the-fun-of-it">For the Fun of It</h3>
+
+  <ul>
+  <li>Commit/comment message sentiment analysis</li>
+  <li>Tracking trending repositories</li>
+  <li>Tracking the top 1 million repositories</li>
+  </ul>
+
+  <h2 id="in-the-end">In the End</h2>
+
+  <p>We learned quite a few things over the course of this project, but there are a few we especially wanted to highlight:</p>
+
+  <ol>
+  <li>
+    <p>Questions drive acquisition and acquisition drives infrastructure. In other words: spend time on things that solve the problem at hand.</p>
+  </li>
+  <li>
+    <p>Identifying bottlenecks and solving them are more often than not the highest leverage areas and have the biggest ROI on time invested.</p>
+  </li>
+  <li>
+    <p>Teamwork is an amazing thing.</p>
+  </li>
+  <li>
+    <p>Keep a journal! Daily journals are incredibly useful for reviewing your workflows, identifying project bottlenecks (human deficiencies), and realizing where you made made bad assumptions</p>
+  </li>
+  <li>
+    <p>Brain synchronization. One of the greatest challenges of working with another person is getting <em>and staying</em> in sync. Once you have both established a common vision and are working on the same code base it is much easier to move forward. However, diverging ideas occur all the time where you talk about the same thing, but you both have very different mental images of what it looks like. Mockups, diagrams, and representational documentation of some kind are priceless when it comes to eliminating confusion over abstract concepts that are poorly represented verbally.</p>
+  </li>
+  <li>
+    <p>Psychological safety is paramount. It’s good for ideas to bump together; it gets rid of the chaff. Discussing decisions creates a kind of idea evolution where the idea grows, shrinks, and becomes something altogether you never would have guessed; it’s better. Being detached from ideas helps with this process and always making sure that the idea is critiqued-not the person! This is something I believe Michael and I handled superbly and I couldn’t be more thankful for it.</p>
+  </li>
+  </ol>
+
+  <p>If you followed along to the bottom, thank you!</p>
+
+  <p><strong>And don’t forget to visit <a href="http://opensourcewatch.io">Open Source Watch</a></strong>!</p>
+
+  <hr />
+  <div>
+  <a href="http://www.numbluk.com/credentials"><img class="gravitar" src="https://www.gravatar.com/avatar/fd080461b35c3dcb5911e38d5f58c5af" /></a>
+
+  <a href="http://getmichaelonboard.com/"><img class="gravitar" src="https://secure.gravatar.com/avatar/6ec313ee09eeb69eddd3789f98a3d2b2" /></a>
+  </div>
+
+  <p>We are two full stack developers… and we are looking for work! Click our beautiful faces to check out our websites.</p>
+
+  <h4 id="footnotes">Footnotes</h4>
+  <div class="footnotes">
+    <ol>
+      <li id="fn:1">
+        <p>Check <a href="http://www.brianstorti.com/implementing-a-priority-queue-in-ruby/">here</a> for more on Binary Heaps.&nbsp;<a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+      </li>
+    </ol>
+  </div>
+
+
+</div> <!-- end of article body -->
