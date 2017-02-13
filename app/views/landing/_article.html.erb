@@ -211,7 +211,7 @@
 
   <p>There is a queue object that is a layer on top of Redis which manages the queue. The dispatcher, the interface between the scrapers and the queue, then requests the next repository from the queue object. The queue object shifts a repository from the front of the Redis queue, copies it, and immediately pushes it to the back of the queue. The dispatcher gets a clone and passes the data from the queue to its collaborating scraper agents.</p>
 
-  <h3 id="scale-up">Scale Up?</h3>
+  <h3 id="scale-up">Cost-Benefit: Scale up or Scale out?</h3>
 
   <p>Now that the scrapers can coordinate via the Redis queue, the next question is whether to scale up or scale out. We could scale up and stack concurrent on one high memory server.</p>
 
