@@ -338,11 +338,9 @@
 
   <p>Only scraping daily data brought in around 25,000 new records a day, but we were now getting hundreds of thousands to millions of records a day. Our request capacity quickly plummeted to 30% of what we expected.</p>
 
-  <img src="/assets/article/downshift_01.png" alt="">
-
   <p>We’ve been downshifted…</p>
 
-  <p><img src="/assets/article/19_downshifted.jpg" alt="" /></p>
+  <img src="/assets/article/downshift_01.png" alt="">
 
   <p>At 30% capacity (of 1.2 Million requests), it will take 10 days to retrieve all the data needed. That’s far too long.</p>
 
@@ -435,8 +433,6 @@
   <h3 id="gaining-speed">Gaining Speed…</h3>
   <img src="/assets/article/downshift_03.png" alt="">
 
-  <p><img src="/assets/article/27_gaining_speed.png" alt="" /></p>
-
   <p>We picked up a great deal of speed with the index. At this moment in time, the system was running around 60% capacity.</p>
 
   <p>While this was much better, it was still slow…</p>
@@ -507,11 +503,9 @@
 
   <p>This is just a visualization. The latency between the scraper server and database server is extremely fast, less than a millisecond, but if latency exists for every single query, and a large number of them are made, then the latency starts to add up. In this case, it meant around 30 less round trips to for each bulk import.</p>
 
-  <h3 id="vrrrr">Vrrrr…</h3>
+  <h3 id="getting-faster">Getting Faster...</h3>
 
   <img src="/assets/article/downshift_04.png" alt="">
-
-  <p><img src="/assets/article/30_vrrr.png" alt="" /></p>
 
   <p>At this point, we are somewhere near 80% capacity, but we didn’t give up the pursuit of optimization quite yet…</p>
 
@@ -547,11 +541,9 @@
 
   <p>As you can see, no more extra queries! We have successfully reduced the number of queries from around 60 to 1!</p>
 
-  <h3 id="vrr-oom">Vrr-OOM!</h3>
+  <h3 id="back-up-to-speed">Back up to Speed</h3>
 
   <img src="/assets/article/downshift_05.png" alt="">
-
-  <p><img src="/assets/article/34_vrroooom.png" alt="" /></p>
 
   <p>At this point, we are now back to the capacity that we had originally anticipated. You’ll notice that 5th gear was never reached! That is not a mistake. Our acquisition could still be further tuned, but we’ll get to that later.</p>
 
