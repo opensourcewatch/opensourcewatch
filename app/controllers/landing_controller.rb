@@ -5,7 +5,7 @@ class LandingController < ApplicationController
     respond_to do |type|
       type.html
       type.js do
-        render partial: 'landing/index.js.erb'
+          render partial: 'landing/index.js.erb'
       end
     end
   end

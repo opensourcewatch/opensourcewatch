@@ -1,6 +1,6 @@
 (function rerenderActivities() {
-  $("table#repositories tbody").html("<%= j render('repositories/index')%>").html_safe;
-  $("table#committers tbody").html("<%= j render('committers/index') %>").html_safe
-  $("table#issues tbody").html("<%= j render('issues/index') %>").html_safe
-  $("table#chatties tbody").html("<%= j render('chatties/index') %>").html_safe
+  $("table#repositories tbody").html("<%= j render(set_table_partial(@repos, 'repositories/index'))%>").html_safe;
+  $("table#committers tbody").html("<%= j render(set_table_partial(@committers, 'committers/index')) %>").html_safe
+  $("table#issues tbody").html("<%= j render(set_table_partial(@issues,'issues/index')) %>").html_safe
+  $("table#chatties tbody").html("<%= j render(set_table_partial(@chatties, 'chatties/index')) %>").html_safe
 })();
