@@ -3,6 +3,8 @@
 # variables on your local machine.
 
 # TODO: right now just appends to bashrc without checking if nodes already exist
+# this needs to be smarter! Should check if nodes exists, or perhaps write to 
+# a separate file and simply store a link in the bashrc to that file
 require 'yaml'
 
 lines = File.readlines('./config/application.yml')
