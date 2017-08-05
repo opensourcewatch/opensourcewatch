@@ -10,10 +10,6 @@ h3 {
   margin-top: 40px;
 }
 
-h1 {
-  background-color: blue;
-}
-
 main .row .col.l5,
 main .row .col.m5,
 footer .row {
@@ -46,54 +42,62 @@ main .row:last-of-type {
   overflow-x: hidden;
 }
 
-header .pushpin-date-range-row {
+.pushpin-date-range-row {
   margin-bottom: 0px;
 }
 
-header .pushpin-date-range-row,
-header .pushpin-date-range-row ul {
+.pushpin-date-range-row,
+.pushpin-date-range-row ul {
   @extend .teal, .lighten-5;
 }
 
-header .pushpin-date-range-row ul {
+.pushpin-date-range-row ul {
   height: 100%;
   padding: 8px 0;
 }
 
-header .pushpin-date-range-row .col {
+.pushpin-date-range-row .col {
   margin-top: 0px;
 }
 
-header .pushpin-date-range-row a {
+.pushpin-date-range-row a {
   @extend .teal-text, .text-accent-4;
 }
 
-header .pushpin-date-range-row .tabs .indicator {
+.pushpin-date-range-row .tabs .indicator {
   background-color: #00bfa5;
 }
 
-header .pushpin-date-range-row.pinned {
+.pushpin-date-range-row.pinned {
   position: fixed !important;
   width: 100%;
   padding-top: 16px;
 }
 
-header .pushpin-date-range-row.pinned,
-header .pushpin-date-range-row.pinned ul {
+.pushpin-date-range-row.pinned,
+.pushpin-date-range-row.pinned ul {
   background-color: #00bfa5 !important;
 }
 
-header .pinned a,
-header .pinned.pushpin-date-range-row .tabs .indicator {
+.pinned a,
+.pinned.pushpin-date-range-row .tabs .indicator {
   color: #e0f2f1 !important;
 }
 
-header .pinned.pushpin-date-range-row .tabs .indicator {
+.pinned.pushpin-date-range-row .tabs .indicator {
   background-color: #e0f2f1 !important;
 }
 
 #description {
   font-size: 1.2em;
+  text-align: justify;
+}
+
+#logo {
+  max-height: 2.7rem;
+  vertical-align: middle;
+  position: relative;
+  left: 4px;
 }
 
 // Color
@@ -110,17 +114,83 @@ header .pinned.pushpin-date-range-row .tabs .indicator {
   background-color: #00796B;
 }
 
-header .description {
+.description {
   color: #fff;
   @extend .teal;
   margin-bottom: 0px;
   padding: 48px 0;
 }
 
-header .description .col {
+.description .col {
   margin-top: 0px;
 }
 
-main a:hover {
+// About
+
+.about .col {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+.about {
+  @extend .teal, .lighten-5;
+}
+
+.about .bio a {
+  @extend .teal-text;
+  display: inline-block;
+  width: 100%;
+}
+
+.about .bio a h2 {
+  font-size: 1.4rem;
+  margin-top: 12px;
+}
+
+.about .bio a:hover {
   @extend .teal-text, .text-accent-4;
+}
+
+h1#about-header {
+  @extend .teal-text;
+  margin: 0;
+  padding: 60px 0 0 0;
+}
+
+.about i::before {
+  color: rgba(208, 0, 0, 0.98);
+}
+
+#made-with-description {
+  padding: 60px 0 0 0;
+}
+
+main.about {
+  @extend .teal, .lighten-5;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  position: relative;
+}
+
+main.about footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 20px;
+}
+
+main.about footer .col {
+  margin: 0;
+}
+
+main.about footer .row {
+  margin: 0;
+}
+
+// Footer
+html,
+body {
+  height: 100%;
 }

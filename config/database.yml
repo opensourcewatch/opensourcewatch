@@ -1,0 +1,18 @@
+production:
+  adapter: postgresql
+  encoding: utf8
+  database: curation_development
+  username: postgres
+  password: <%= ENV['CURATION_DB_PASSWORD'] %>
+  host: <%= ENV['CURATION_DB_IP'] %>
+  port: 5432
+  pool: 10
+
+development:
+  adapter: postgresql
+  encoding: utf8
+  database: curation_development
+  username: postgres
+  password: password 
+  port: 5432
+  pool: 10

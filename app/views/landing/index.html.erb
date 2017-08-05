@@ -1,17 +1,11 @@
-<header>
-  <nav>
-    <div class="nav-wrapper">
-      <%= link_to "Open Source Watch", root_path, class: "brand-logo center" %>
-    </div>
-  </nav>
-
-    <div class="row description">
-      <div class="col s12 m8 l6 offset-l3 offset-m2">
-          <p class="flow-text" id="description">
-            Stay up to date with the most popular Github repositories. Easily check the activity of top projects, issues, and developers up to the last 90 days. We are growing fast so keep watching!
-          </p>
-        </div>
-    </div>
+<main>
+  <div class="row description">
+    <div class="col s12 m8 l6 offset-l3 offset-m2">
+        <p class="flow-text" id="description">
+          OpenSource Watch is up to date with everything that is going on in the 100,000 most popular open source libraries on Github. Easily check the top activity among libraries, issues, and developers up to the last 90 days. We are growing fast so keep watching!
+        </p>
+      </div>
+  </div>
 
   <div class="row pushpin-date-range-row">
     <div class="col s12 m8 l8 offset-m2 offset-l2">
@@ -23,84 +17,74 @@
       </ul>
     </div>
   </div>
-</header>
 
-<main>
-    <div class="row">
-      <div class="col s12 m5 l5 hoverable">
-        <table class="bordered highlight centered" id="repositories">
-          <h4 class="center-align">Top Repositories</h3>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Repository</th>
-              <th>Commits</th>
-            </tr>
-          </thead>
-          <tbody>
-            <%= render 'repositories/index' %>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="col s12 m5 l5 hoverable">
-        <table class="bordered highlight centered" id="committers">
-          <h4 class="center-align">Top Committers</h3>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Commiter</th>
-              <th>Commits</th>
-            </tr>
-          </thead>
-          <tbody>
-            <%= render 'committers/index' %>
-          </tbody>
-        </table>
-      </div>
+  <div class="row">
+    <div class="col s12 m5 l5 hoverable">
+      <table class="bordered highlight centered" id="repositories">
+        <h4 class="center-align">Top Repositories</h3>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Repository</th>
+            <th>Commits</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%= render 'repositories/index' %>
+        </tbody>
+      </table>
     </div>
 
-    <div class="row">
-      <div class="col s12 m5 l5 hoverable">
-        <table class="bordered highlight centered" id="issues">
-          <h4 class="center-align">Active Issues</h3>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Title</th>
-              <th>Comments</th>
-              <th>Repository</th>
-            </tr>
-          </thead>
-          <tbody>
-            <%= render 'issues/index' %>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="col s12 m5 l5 hoverable">
-        <table class="bordered highlight centered" id="chatties">
-          <h4 class="center-align">Chattiest Users</h3>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>User</th>
-              <th>Comments</th>
-            </tr>
-          </thead>
-          <tbody>
-            <%= render 'chatties/index' %>
-          </tbody>
-        </table>
-      </div>
+    <div class="col s12 m5 l5 hoverable">
+      <table class="bordered highlight centered" id="committers">
+        <h4 class="center-align">Top Committers</h3>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Commiter</th>
+            <th>Commits</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%= render 'committers/index' %>
+        </tbody>
+      </table>
     </div>
+  </div>
+
+  <div class="row">
+    <div class="col s12 m5 l5 hoverable">
+      <table class="bordered highlight centered" id="issues">
+        <h4 class="center-align">Active Issues</h3>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Repository#Issue</th>
+            <th>Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%= render 'issues/index' %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col s12 m5 l5 hoverable">
+      <table class="bordered highlight centered" id="chatties">
+        <h4 class="center-align">Chattiest Users</h3>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>User</th>
+            <th>Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%= render 'chatties/index' %>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </main>
 
-<footer>
-  <div class="row">
-    <div class="col s12">
-    &copy; 2017 OpenSource Watch
-    <%#<a class="grey-text text-lighten-4 right" href="#!">Email Us</a>%>
-  </div>
-  </div>
-</footer>
+<%= render 'shared/footer' %>

@@ -1,5 +1,5 @@
-$(document).ready(function() {
-  $('select').material_select();
+$(document).ready( function() {
+  $("ul.tabs").tabs();
 
   $('.pushpin-date-range-row').each(function() {
     var $this = $(this);

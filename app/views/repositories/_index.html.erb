@@ -1,7 +1,9 @@
 <% @repos.each_with_index do |repo, i| %>
 <tr>
   <td><%= i + 1 %></td>
-  <td><%= link_to repo.name, repo.url %></td>
+  <% url = repo.url %>
+  <% group_and_name = /github.com\/(.*)/.match(url)[1] %>
+  <td><%= link_to group_and_name, url %></td>
   <td><%= repo.hit_count %></td>
 </tr>
 <% end %>

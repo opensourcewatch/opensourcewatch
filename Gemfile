@@ -10,7 +10,7 @@ gem 'uglifier', '>= 1.3.0' # Compressor for JavaScript assets
 gem 'jquery-rails' # JavaScript library
 
 # Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
-gem 'turbolinks', '~> 5'
+# gem 'turbolinks', '~> 5'
 
 # Infrastructure
 gem 'rails', '~> 5.0.0', '>= 5.0.0.1'
@@ -20,7 +20,8 @@ gem 'redis'
 gem 'figaro'
 gem 'activerecord-import'
 gem 'json'
-gem 'whenever', require: false 
+gem 'whenever', require: false
+gem 'font-awesome-rails'
 
 # JS Runtime
 gem 'therubyracer'
@@ -31,6 +32,8 @@ gem 'elasticsearch-rails'
 
 # Material design
 gem 'materialize-sass'
+
+gem 'rails_12factor', group: :production
 
 group :development, :test do
   gem 'pry'     # Debugging
