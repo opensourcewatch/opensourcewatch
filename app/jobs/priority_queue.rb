@@ -68,7 +68,7 @@ class PriorityQueue
     unique_queues = []
     priority_tags.each do |tag|
       queue_name = sub_queue_name(tag.to_s)
-      unique_queues << CircularRedisQueue.new(queue_name)
+      unique_queues << CircularRedisQueue.new(queue_name: queue_name)
     end
     unique_queues
   end
